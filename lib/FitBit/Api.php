@@ -31,7 +31,7 @@ class Api
      * @param string $user_agent User-agent to use in API calls
      * @param string $response_format Response format (json or xml) to use in API calls
      */
-    public function __construct($consumer_key, $consumer_secret, $callbackUrl = null, $responseFormat = 'json')
+    public function __construct($consumer_key, $consumer_secret, $callbackUrl = null, $responseFormat = 'json', \OAuth\Common\Storage\TokenStorageInterface $storageAdapter = null)
     {
         if (!in_array($responseFormat, array('json', 'xml')))
         {
@@ -56,8 +56,12 @@ class Api
             $callbackUrl
         );
 
-        $storage = new \OAuth\Common\Storage\Session();
-        $this->service = $factory->createService('FitBit', $credentials, $storage);
+        if ($storageAdapter == null)
+        {
+            $storageAdapter = new \OAuth\Common\Storage\Session();
+        }
+
+        $this->service = $factory->createService('FitBit', $credentials, $storageAdapter);
     }
 
     public function isAuthorized() {
