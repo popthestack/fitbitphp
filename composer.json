@@ -1,12 +1,12 @@
 {
-    "name": "heyitspavel/fitbitphp",
+    "name": "thesavior/fitbitphp",
     "version": "0.5",
     "type": "library",
     "description": "Fitbit library with OAuth",
     "keywords": ["fitbit"],
-    "homepage": "https://github.com/heyitspavel/fitbitphp",
+    "homepage": "https://github.com/thesavior/fitbitphp",
     "require": {
-        "php": ">=5.3.2",
+        "php": ">=5.4",
         "lusitanian/oauth" : "dev-master"
     },
     "autoload": {
