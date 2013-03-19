@@ -3,8 +3,8 @@
  * Fitbit API communication exception
  *
  */
- 
-namespace FitBit;
+
+namespace Fitbit;
 
 class Exception extends \Exception
 {
@@ -12,7 +12,7 @@ class Exception extends \Exception
     public $httpcode;
 
     public function __construct($code, $fbMessage = null, $message = null)
-    {   
+    {
         $this->fbMessage = $fbMessage;
         $this->httpcode = $code;
 
@@ -26,5 +26,5 @@ class Exception extends \Exception
         }
 
         parent::__construct($message, $code);
-    }   
+    }
 }

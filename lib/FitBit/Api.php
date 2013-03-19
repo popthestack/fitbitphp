@@ -12,41 +12,17 @@
  * Requires OAuth 1.0.0, SimpleXML
  * @version 0.71 ($Id$)
  */
-namespace FitBit;
+namespace Fitbit;
 
 class Api
 {
+    protected $service;
 
-    /**
-     * API Constants
-     *
-     */
-    private $authHost = 'www.fitbit.com';
-    private $apiHost = 'api.fitbit.com';
-
-    private $baseApiUrl;
-    private $authUrl;
-    private $requestTokenUrl;
-    private $accessTokenUrl;
-
-
-    /**
-     * Class Variables
-     *
-     */
-    protected $oauth;
-    protected $oauthToken, $oauthSecret;
-
-    protected $responseFormat;
+    protected $oauthToken;
+    protected $oauthSecret;
 
     protected $userId = '-';
-
-    protected $metric = 0;
-    protected $userAgent = 'FitbitPHP 0.71';
-    protected $debug;
-
-    protected $clientDebug;
-
+    protected $responseFormat;
 
     /**
      * @param string $consumer_key Application consumer key for Fitbit API
@@ -55,121 +31,44 @@ class Api
      * @param string $user_agent User-agent to use in API calls
      * @param string $response_format Response format (json or xml) to use in API calls
      */
-    public function __construct($consumer_key, $consumer_secret, $debug = 1, $user_agent = null, $response_format = 'xml')
+    public function __construct($consumer_key, $consumer_secret, $callbackUrl = null, $responseFormat = 'json')
     {
-        $this->initUrls();
-
-        $this->consumer_key = $consumer_key;
-        $this->consumer_secret = $consumer_secret;
-        $this->oauth = new \OAuth($consumer_key, $consumer_secret, OAUTH_SIG_METHOD_HMACSHA1, OAUTH_AUTH_TYPE_AUTHORIZATION);
-
-        $this->debug = $debug;
-        if ($debug)
-            $this->oauth->enableDebug();
-
-        if (isset($user_agent))
-            $this->userAgent = $user_agent;
-
-        $this->responseFormat = $response_format;
-    }
-
-
-    /**
-     * @param string $consumer_key Application consumer key for Fitbit API
-     * @param string $consumer_secret Application secret
-     */
-    public function reinit($consumer_key, $consumer_secret)
-    {
-
-        $this->consumer_key = $consumer_key;
-        $this->consumer_secret = $consumer_secret;
-
-        $this->oauth = new \OAuth($consumer_key, $consumer_secret, OAUTH_SIG_METHOD_HMACSHA1, OAUTH_AUTH_TYPE_AUTHORIZATION);
-
-        if ($this->debug)
-            $this->oauth->enableDebug();
-    }
-
-
-    /**
-     * @param string $apiHost API host, i.e. api.fitbit.com (do you know any others?)
-     * @param string $authHost Auth host, i.e. www.fitbit.com
-     */
-    public function setEndpointBase($apiHost, $authHost, $https = true, $httpsApi = false)
-    {
-        $this->apiHost = $apiHost;
-        $this->authHost = $authHost;
-
-        $this->initUrls($https, $httpsApi);
-    }
-
-    private function initUrls($https = true, $httpsApi = false)
-    {
-
-        if ($httpsApi)
-            $this->baseApiUrl = 'https://' . $this->apiHost . '/1/';
-        else
-            $this->baseApiUrl = 'http://' . $this->apiHost . '/1/';
-
-        if ($https) {
-            $this->authUrl = 'https://' . $this->authHost . '/oauth/authorize';
-            $this->requestTokenUrl = 'https://' . $this->apiHost . '/oauth/request_token';
-            $this->accessTokenUrl = 'https://' . $this->apiHost . '/oauth/access_token';
-        } else {
-            $this->authUrl = 'http://' . $this->authHost . '/oauth/authorize';
-            $this->requestTokenUrl = 'http://' . $this->apiHost . '/oauth/request_token';
-            $this->accessTokenUrl = 'http://' . $this->apiHost . '/oauth/access_token';
+        if (!in_array($responseFormat, array('json', 'xml')))
+        {
+            throw new \Exception("Reponse format must be one of 'json', 'xml'");
         }
-    }
 
-    /**
-     * @return OAuth debugInfo object for previous call. Debug should be enabled in __construct
-     */
-    public function oauthDebug()
-    {
-        return $this->oauth->debugInfo;
-    }
-
-    /**
-     * @return OAuth debugInfo object for previous client_customCall. Debug should be enabled in __construct
-     */
-    public function client_oauthDebug()
-    {
-        return $this->clientDebug;
-    }
-
-
-    /**
-     * Returns Fitbit session status for frontend (i.e. 'Sign in with Fitbit' implementations)
-     *
-     * @return int (0 - no session, 1 - just after successful authorization, 2 - session exist)
-     */
-    public static function sessionStatus()
-    {
-        $session = session_id();
-        if (empty($session)) {
-            session_start();
+        // If callback url wasn't set, use the current url
+        if ($callbackUrl == null) {
+            $uriFactory = new \OAuth\Common\Http\Uri\UriFactory();
+            $currentUri = $uriFactory->createFromSuperGlobalArray($_SERVER);
+            $currentUri->setQuery('');
+            $callbackUrl = $currentUri->getAbsoluteUri();
         }
-        if (empty($_SESSION['fitbit_Session']))
-            $_SESSION['fitbit_Session'] = 0;
 
-        return (int)$_SESSION['fitbit_Session'];
+        $this->responseFormat = $responseFormat;
+
+        $factory = new \OAuth\ServiceFactory();
+
+        $credentials = new \OAuth\Common\Consumer\Credentials(
+            $consumer_key,
+            $consumer_secret,
+            $callbackUrl
+        );
+
+        $storage = new \OAuth\Common\Storage\Session();
+        $this->service = $factory->createService('FitBit', $credentials, $storage);
+    }
+
+    public function isAuthorized() {
+        return $this->service->getStorage()->hasAccessToken();
     }
 
     /**
-     * Initialize session. Inits OAuth session, handles redirects to Fitbit login/authorization if needed
-     *
-     * @param  $callbackUrl Callback for 'Sign in with Fitbit'
-     * @param  $cookie Use persistent cookie for authorization, or session cookie only
-     * @return int (1 - just after successful authorization, 2 - if session already exist)
-     */
-    public function initSession($callbackUrl, $cookie = true)
-    {
-
-        $session = session_id();
-        if (empty($session)) {
-            session_start();
-        }
+    * Authorize the user
+    *
+    */
+    public function initSession() {
 
         if (empty($_SESSION['fitbit_Session']))
             $_SESSION['fitbit_Session'] = 0;
@@ -181,32 +80,28 @@ class Api
 
         if ($_SESSION['fitbit_Session'] == 0) {
 
-            $request_token_info = $this->oauth->getRequestToken($this->requestTokenUrl, $callbackUrl);
+            $token = $this->service->requestRequestToken();
+            $url = $this->service->getAuthorizationUri(['oauth_token' => $token->getRequestToken()]);
 
-            $_SESSION['fitbit_Secret'] = $request_token_info['oauth_token_secret'];
             $_SESSION['fitbit_Session'] = 1;
-
-            header('Location: ' . $this->authUrl . '?oauth_token=' . $request_token_info['oauth_token']);
+            header('Location: ' . $url);
             exit;
 
         } else if ($_SESSION['fitbit_Session'] == 1) {
 
-            $this->oauth->setToken($_GET['oauth_token'], $_SESSION['fitbit_Secret']);
-            $access_token_info = $this->oauth->getAccessToken($this->accessTokenUrl);
+            $token = $this->service->getStorage()->retrieveAccessToken();
+            // This was a callback request from fitbit, get the token
+            $this->service->requestAccessToken(
+                $_GET['oauth_token'],
+                $_GET['oauth_verifier'],
+                $token->getRequestTokenSecret() );
 
             $_SESSION['fitbit_Session'] = 2;
-            $_SESSION['fitbit_Token'] = $access_token_info['oauth_token'];
-            $_SESSION['fitbit_Secret'] = $access_token_info['oauth_token_secret'];
 
-            $this->setOAuthDetails($_SESSION['fitbit_Token'], $_SESSION['fitbit_Secret']);
             return 1;
 
-        } else if ($_SESSION['fitbit_Session'] == 2) {
-            $this->setOAuthDetails($_SESSION['fitbit_Token'], $_SESSION['fitbit_Secret']);
-            return 2;
         }
     }
-
 
     /**
      * Reset session
@@ -215,57 +110,10 @@ class Api
      */
     public function resetSession()
     {
-        $_SESSION['fitbit_Session'] = 0;
+        // TODO: Need to add clear to the interface for phpoauthlib
+        $this->service->getStorage()->clearToken();
+        unset($_SESSION["fitbit_Session"]);
     }
-
-
-    /**
-     * Sets OAuth token/secret. Use if library used in internal calls without session handling
-     *
-     * @param  $token
-     * @param  $secret
-     * @return void
-     */
-    public function setOAuthDetails($token, $secret)
-    {
-        $this->oauthToken = $token;
-        $this->oauthSecret = $secret;
-
-        $this->oauth->setToken($this->oauthToken, $this->oauthSecret);
-    }
-
-    /**
-     * Get OAuth token
-     *
-     * @return string
-     */
-    public function getOAuthToken()
-    {
-        return $this->oauthToken;
-    }
-
-    /**
-     * Get OAuth secret
-     *
-     * @return string
-     */
-    public function getOAuthSecret()
-    {
-        return $this->oauthSecret;
-    }
-
-
-    /**
-     * Set Fitbit response format for future API calls
-     *
-     * @param  $response_format 'json' or 'xml'
-     * @return void
-     */
-    public function setResponseFormat($response_format)
-    {
-        $this->responseFormat = $response_format;
-    }
-
 
     /**
      * Set Fitbit userId for future API calls
@@ -278,52 +126,21 @@ class Api
         $this->userId = $userId;
     }
 
-
-    /**
-     * Set Unit System for all future calls (see http://wiki.fitbit.com/display/API/API-Unit-System)
-     * 0 (Metric), 1 (en_US), 2 (en_GB)
-     *
-     * @param int $metric
-     * @return void
-     */
-    public function setMetric($metric)
+    protected function verifyToken()
     {
-        $this->metric = $metric;
+        if(!$this->isAuthorized()) {
+            throw new \Exception("You must be authorized to make requests");
+        }
     }
-
 
     /**
      * API wrappers
      *
      */
-
-    /**
-     * Get user profile
-     *
-     * @throws Exception
-     * @param string $userId UserId of public profile, if none using set with setUser or '-' by default
-     * @return mixed SimpleXMLElement or the value encoded in json as an object
-     */
     public function getProfile()
     {
-        $headers = $this->getHeaders();
-
-        try {
-            $this->oauth->fetch($this->baseApiUrl . "user/" . $this->userId . "/profile." . $this->responseFormat, null, OAUTH_HTTP_METHOD_GET, $headers);
-        } catch (\Exception $E) {
-        }
-        $response = $this->oauth->getLastResponse();
-        $responseInfo = $this->oauth->getLastResponseInfo();
-        if (!strcmp($responseInfo['http_code'], '200')) {
-            $response = $this->parseResponse($response);
-
-            if ($response)
-                return $response;
-            else
-                throw new \Exception($responseInfo['http_code'], 'Fitbit request failed. Code: ' . $responseInfo['http_code']);
-        } else {
-            throw new \Exception($responseInfo['http_code'], 'Fitbit request failed. Code: ' . $responseInfo['http_code']);
-        }
+        $response = $this->service->request('user/'.$this->userId.'/profile.'.$this->responseFormat);
+        return $this->parseResponse($response);
     }
 
 
@@ -341,7 +158,6 @@ class Api
      */
     public function updateProfile($gender = null, $birthday = null, $height = null, $nickname = null, $fullName = null, $timezone = null)
     {
-        $headers = $this->getHeaders();
         $parameters = array();
         if (isset($gender))
             $parameters['gender'] = $gender;
@@ -356,31 +172,9 @@ class Api
         if (isset($timezone))
             $parameters['timezone'] = $timezone;
 
-        try {
-            $this->oauth->fetch($this->baseApiUrl . "user/-/profile." . $this->responseFormat,
-                                $parameters, OAUTH_HTTP_METHOD_POST, $headers);
-        } catch (\Exception $E) {
-        }
-
-        $response = $this->oauth->getLastResponse();
-        $responseInfo = $this->oauth->getLastResponseInfo();
-        if (!strcmp($responseInfo['http_code'], '201')) {
-            $response = $this->parseResponse($response);
-
-            if ($response)
-                return $response;
-            else
-                throw new \Exception($responseInfo['http_code'], 'Fitbit request failed. Code: ' . $responseInfo['http_code']);
-        } else {
-            $response = $this->parseResponse($response);
-
-            if (!$response)
-                throw new \Exception($responseInfo['http_code'], 'Fitbit request failed. Code: ' . $responseInfo['http_code']);                
-            else
-                throw new \Exception($responseInfo['http_code'], $response->message, 'Fitbit request failed. Code: ' . $responseInfo['http_code']);
-        }
+        $response = $this->service->request('user/'.$this->userId.'/profile.'.$this->responseFormat, "POST", $parameters);
+        return $this->parseResponse($response);
     }
-
 
     /**
      * Get user activities for specific date
@@ -392,28 +186,12 @@ class Api
      */
     public function getActivities($date, $dateStr = null)
     {
-        $headers = $this->getHeaders();
         if (!isset($dateStr)) {
             $dateStr = $date->format('Y-m-d');
         }
-        try {
-            $this->oauth->fetch($this->baseApiUrl . "user/" . $this->userId . "/activities/date/" . $dateStr . "." . $this->responseFormat,
-                                null, OAUTH_HTTP_METHOD_GET, $headers);
-        } catch (\Exception $E) {
-        }
 
-        $response = $this->oauth->getLastResponse();
-        $responseInfo = $this->oauth->getLastResponseInfo();
-        if (!strcmp($responseInfo['http_code'], '200')) {
-            $response = $this->parseResponse($response);
-
-            if ($response)
-                return $response;
-            else
-                throw new \Exception($responseInfo['http_code'], 'Fitbit request failed. Code: ' . $responseInfo['http_code']);
-        } else {
-            throw new \Exception($responseInfo['http_code'], 'Fitbit request failed. Code: ' . $responseInfo['http_code']);
-        }
+        $response = $this->service->request('user/'.$this->userId.'/activities/date/'.$dateStr.".".$this->responseFormat);
+        return $this->parseResponse($response);
     }
 
 
@@ -425,24 +203,8 @@ class Api
      */
     public function getRecentActivities()
     {
-        $headers = $this->getHeaders();
-        try {
-            $this->oauth->fetch($this->baseApiUrl . "user/-/activities/recent." . $this->responseFormat, null,
-                                OAUTH_HTTP_METHOD_GET, $headers);
-        } catch (\Exception $E) {
-        }
-        $response = $this->oauth->getLastResponse();
-        $responseInfo = $this->oauth->getLastResponseInfo();
-        if (!strcmp($responseInfo['http_code'], '200')) {
-            $response = $this->parseResponse($response);
-
-            if ($response)
-                return $response;
-            else
-                throw new \Exception($responseInfo['http_code'], 'Fitbit request failed. Code: ' . $responseInfo['http_code']);
-        } else {
-            throw new \Exception($responseInfo['http_code'], 'Fitbit request failed. Code: ' . $responseInfo['http_code']);
-        }
+        $response = $this->service->request('user/-/activities/recent.'.$this->responseFormat);
+        return $this->parseResponse($response);
     }
 
 
@@ -454,24 +216,8 @@ class Api
      */
     public function getFrequentActivities()
     {
-        $headers = $this->getHeaders();
-        try {
-            $this->oauth->fetch($this->baseApiUrl . "user/-/activities/frequent." . $this->responseFormat, null,
-                                OAUTH_HTTP_METHOD_GET, $headers);
-        } catch (\Exception $E) {
-        }
-        $response = $this->oauth->getLastResponse();
-        $responseInfo = $this->oauth->getLastResponseInfo();
-        if (!strcmp($responseInfo['http_code'], '200')) {
-            $response = $this->parseResponse($response);
-            
-            if ($response)
-                return $response;
-            else
-                throw new \Exception($responseInfo['http_code'], 'Fitbit request failed. Code: ' . $responseInfo['http_code']);
-        } else {
-            throw new \Exception($responseInfo['http_code'], 'Fitbit request failed. Code: ' . $responseInfo['http_code']);
-        }
+        $response = $this->service->request('user/-/activities/frequent.'.$this->responseFormat);
+        return $this->parseResponse($response);
     }
 
 
@@ -483,24 +229,8 @@ class Api
      */
     public function getFavoriteActivities()
     {
-        $headers = $this->getHeaders();
-        try {
-            $this->oauth->fetch($this->baseApiUrl . "user/-/activities/favorite." . $this->responseFormat, null,
-                                OAUTH_HTTP_METHOD_GET, $headers);
-        } catch (\Exception $E) {
-        }
-        $response = $this->oauth->getLastResponse();
-        $responseInfo = $this->oauth->getLastResponseInfo();
-        if (!strcmp($responseInfo['http_code'], '200')) {
-            $response = $this->parseResponse($response);
-            
-            if ($response)
-                return $response;
-            else
-                throw new Exception($responseInfo['http_code'], 'Fitbit request failed. Code: ' . $responseInfo['http_code']);
-        } else {
-            throw new Exception($responseInfo['http_code'], 'Fitbit request failed. Code: ' . $responseInfo['http_code']);
-        }
+        $response = $this->service->request('user/-/activities/favorite.'.$this->responseFormat);
+        return $this->parseResponse($response);
     }
 
 
@@ -521,7 +251,6 @@ class Api
     {
         $distanceUnits = array('Centimeter', 'Foot', 'Inch', 'Kilometer', 'Meter', 'Mile', 'Millimeter', 'Steps', 'Yards');
 
-        $headers = $this->getHeaders();
         $parameters = array();
         $parameters['date'] = $date->format('Y-m-d');
         $parameters['startTime'] = $date->format('H:i');
@@ -539,29 +268,8 @@ class Api
         if (isset($distanceUnit) && in_array($distanceUnit, $distanceUnits))
             $parameters['distanceUnit'] = $distanceUnit;
 
-        try {
-            $this->oauth->fetch($this->baseApiUrl . "user/-/activities." . $this->responseFormat, $parameters,
-                                OAUTH_HTTP_METHOD_POST, $headers);
-        } catch (\Exception $E) {
-        }
-
-        $response = $this->oauth->getLastResponse();
-        $responseInfo = $this->oauth->getLastResponseInfo();
-        if (!strcmp($responseInfo['http_code'], '201')) {
-            $response = $this->parseResponse($response);
-            
-            if ($response)
-                return $response;
-            else
-                throw new Exception($responseInfo['http_code'], 'Fitbit request failed. Code: ' . $responseInfo['http_code']);
-        } else {
-            $response = $this->parseResponse($response);
-
-            if (!$response)
-                throw new Exception($responseInfo['http_code'], 'Fitbit request failed. Code: ' . $responseInfo['http_code']);
-            else
-                throw new Exception($responseInfo['http_code'], $response->message, 'Fitbit request failed. Code: ' . $responseInfo['http_code']);
-        }
+        $response = $this->service->request('user/-/activities.'.$this->responseFormat, "POST", $parameters);
+        return $this->parseResponse($response);
     }
 
 
@@ -574,20 +282,8 @@ class Api
      */
     public function deleteActivity($id)
     {
-        $headers = $this->getHeaders();
-
-        try {
-            $this->oauth->fetch($this->baseApiUrl . "user/-/activities/" . $id . ".xml", null,
-                                OAUTH_HTTP_METHOD_DELETE, $headers);
-        } catch (\Exception $E) {
-        }
-
-        $responseInfo = $this->oauth->getLastResponseInfo();
-        if (!strcmp($responseInfo['http_code'], '204')) {
-            return true;
-        } else {
-            throw new Exception($responseInfo['http_code'], 'Fitbit request failed. Code: ' . $responseInfo['http_code']);
-        }
+        $response = $this->service->request('user/-/activities/'.$id.'.'.$this->responseFormat, "DELETE");
+        return $this->parseResponse($response);
     }
 
 
@@ -600,19 +296,8 @@ class Api
      */
     public function addFavoriteActivity($id)
     {
-        $headers = $this->getHeaders();
-        try {
-            $this->oauth->fetch($this->baseApiUrl . "user/-/activities/log/favorite/" . $id . "." . $this->responseFormat,
-                                null, OAUTH_HTTP_METHOD_POST, $headers);
-        } catch (\Exception $E) {
-        }
-
-        $responseInfo = $this->oauth->getLastResponseInfo();
-        if (!strcmp($responseInfo['http_code'], '201')) {
-            return true;
-        } else {
-            throw new Exception($responseInfo['http_code'], 'Fitbit request failed. Code: ' . $responseInfo['http_code']);
-        }
+        $response = $this->service->request('user/-/activities/log/favorite/'.$id.'.'.$this->responseFormat, "POST");
+        return $this->parseResponse($response);
     }
 
 
@@ -625,18 +310,8 @@ class Api
      */
     public function deleteFavoriteActivity($id)
     {
-        $headers = $this->getHeaders();
-        try {
-            $this->oauth->fetch($this->baseApiUrl . "user/-/activities/log/favorite/" . $id . ".xml",
-                                null, OAUTH_HTTP_METHOD_DELETE, $headers);
-        } catch (\Exception $E) {
-        }
-        $responseInfo = $this->oauth->getLastResponseInfo();
-        if (!strcmp($responseInfo['http_code'], '204')) {
-            return true;
-        } else {
-            throw new Exception($responseInfo['http_code'], 'Fitbit request failed. Code: ' . $responseInfo['http_code']);
-        }
+        $response = $this->service->request('user/-/activities/log/favorite/'.$id.'.'.$this->responseFormat, "DELETE");
+        return $this->parseResponse($response);
     }
 
 
@@ -649,24 +324,8 @@ class Api
      */
     public function getActivity($id)
     {
-        $headers = $this->getHeaders();
-        try {
-            $this->oauth->fetch($this->baseApiUrl . "activities/" . $id . "." . $this->responseFormat, null,
-                                OAUTH_HTTP_METHOD_GET, $headers);
-        } catch (\Exception $E) {
-        }
-        $response = $this->oauth->getLastResponse();
-        $responseInfo = $this->oauth->getLastResponseInfo();
-        if (!strcmp($responseInfo['http_code'], '200')) {
-            $response = $this->parseResponse($response);
-
-            if ($response)
-                return $response;
-            else
-                throw new Exception($responseInfo['http_code'], 'Fitbit request failed. Code: ' . $responseInfo['http_code']);
-        } else {
-            throw new Exception($responseInfo['http_code'], 'Fitbit request failed. Code: ' . $responseInfo['http_code']);
-        }
+        $response = $this->service->request('activities/'.$id.'.'.$this->responseFormat);
+        return $this->parseResponse($response);
     }
 
 
@@ -678,24 +337,8 @@ class Api
      */
     public function browseActivities()
     {
-        $headers = $this->getHeaders();
-        try {
-            $this->oauth->fetch($this->baseApiUrl . "activities." . $this->responseFormat, null,
-                                OAUTH_HTTP_METHOD_GET, $headers);
-        } catch (\Exception $E) {
-        }
-        $response = $this->oauth->getLastResponse();
-        $responseInfo = $this->oauth->getLastResponseInfo();
-        if (!strcmp($responseInfo['http_code'], '200')) {
-            $response = $this->parseResponse($response);
-            
-            if ($response)
-                return $response;
-            else
-                throw new Exception($responseInfo['http_code'], 'Fitbit request failed. Code: ' . $responseInfo['http_code']);
-        } else {
-            throw new Exception($responseInfo['http_code'], 'Fitbit request failed. Code: ' . $responseInfo['http_code']);
-        }
+        $response = $this->service->request('activities.'.$this->responseFormat);
+        return $this->parseResponse($response);
     }
 
 
@@ -709,28 +352,12 @@ class Api
      */
     public function getFoods($date, $dateStr = null)
     {
-        $headers = $this->getHeaders();
         if (!isset($dateStr)) {
             $dateStr = $date->format('Y-m-d');
         }
-        try {
-            $this->oauth->fetch($this->baseApiUrl . "user/" . $this->userId . "/foods/log/date/" . $dateStr . "." . $this->responseFormat,
-                                null, OAUTH_HTTP_METHOD_GET, $headers);
-        } catch (\Exception $E) {
-        }
 
-        $response = $this->oauth->getLastResponse();
-        $responseInfo = $this->oauth->getLastResponseInfo();
-        if (!strcmp($responseInfo['http_code'], '200')) {
-            $response = $this->parseResponse($response);
-
-            if ($response)
-                return $response;
-            else
-                throw new Exception($responseInfo['http_code'], 'Fitbit request failed. Code: ' . $responseInfo['http_code']);
-        } else {
-            throw new Exception($responseInfo['http_code'], 'Fitbit request failed. Code: ' . $responseInfo['http_code']);
-        }
+        $response = $this->service->request('user/'.$this->userId.'/foods/log/date/'.$dateStr.".".$this->responseFormat);
+        return $this->parseResponse($response);
     }
 
 
@@ -742,25 +369,8 @@ class Api
      */
     public function getRecentFoods()
     {
-        $headers = $this->getHeaders();
-        try {
-            $this->oauth->fetch($this->baseApiUrl . "user/-/foods/log/recent." . $this->responseFormat, null,
-                                OAUTH_HTTP_METHOD_GET, $headers);
-        } catch (\Exception $E) {
-        }
-
-        $response = $this->oauth->getLastResponse();
-        $responseInfo = $this->oauth->getLastResponseInfo();
-        if (!strcmp($responseInfo['http_code'], '200')) {
-            $response = $this->parseResponse($response);
-
-            if ($response)
-                return $response;
-            else
-                throw new Exception($responseInfo['http_code'], 'Fitbit request failed. Code: ' . $responseInfo['http_code']);
-        } else {
-            throw new Exception($responseInfo['http_code'], 'Fitbit request failed. Code: ' . $responseInfo['http_code']);
-        }
+        $response = $this->service->request('user/-/foods/log/recent.'.$this->responseFormat);
+        return $this->parseResponse($response);
     }
 
 
@@ -772,24 +382,8 @@ class Api
      */
     public function getFrequentFoods()
     {
-        $headers = $this->getHeaders();
-        try {
-            $this->oauth->fetch($this->baseApiUrl . "user/-/foods/log/frequent." . $this->responseFormat, null,
-                                OAUTH_HTTP_METHOD_GET, $headers);
-        } catch (\Exception $E) {
-        }
-        $response = $this->oauth->getLastResponse();
-        $responseInfo = $this->oauth->getLastResponseInfo();
-        if (!strcmp($responseInfo['http_code'], '200')) {
-            $response = $this->parseResponse($response);
-
-            if ($response)
-                return $response;
-            else
-                throw new Exception($responseInfo['http_code'], 'Fitbit request failed. Code: ' . $responseInfo['http_code']);
-        } else {
-            throw new Exception($responseInfo['http_code'], 'Fitbit request failed. Code: ' . $responseInfo['http_code']);
-        }
+        $response = $this->service->request('user/-/foods/log/frequent.'.$this->responseFormat);
+        return $this->parseResponse($response);
     }
 
 
@@ -801,24 +395,8 @@ class Api
      */
     public function getFavoriteFoods()
     {
-        $headers = $this->getHeaders();
-        try {
-            $this->oauth->fetch($this->baseApiUrl . "user/-/foods/log/favorite." . $this->responseFormat, null,
-                                OAUTH_HTTP_METHOD_GET, $headers);
-        } catch (\Exception $E) {
-        }
-        $response = $this->oauth->getLastResponse();
-        $responseInfo = $this->oauth->getLastResponseInfo();
-        if (!strcmp($responseInfo['http_code'], '200')) {
-            $response = $this->parseResponse($response);
-
-            if ($response)
-                return $response;
-            else
-                throw new Exception($responseInfo['http_code'], 'Fitbit request failed. Code: ' . $responseInfo['http_code']);
-        } else {
-            throw new Exception($responseInfo['http_code'], 'Fitbit request failed. Code: ' . $responseInfo['http_code']);
-        }
+        $response = $this->service->request('user/-/foods/log/favorite.'.$this->responseFormat);
+        return $this->parseResponse($response);
     }
 
 
@@ -835,7 +413,6 @@ class Api
      */
     public function logFood($date, $foodId, $mealTypeId, $unitId, $amount, $foodName = null, $calories = null, $brandName = null, $nutrition = null)
     {
-        $headers = $this->getHeaders();
         $parameters = array();
         $parameters['date'] = $date->format('Y-m-d');
         if (isset($foodName)) {
@@ -855,28 +432,8 @@ class Api
         $parameters['unitId'] = $unitId;
         $parameters['amount'] = $amount;
 
-        try {
-            $this->oauth->fetch($this->baseApiUrl . "user/-/foods/log." . $this->responseFormat, $parameters,
-                                OAUTH_HTTP_METHOD_POST, $headers);
-        } catch (\Exception $E) {
-        }
-        $response = $this->oauth->getLastResponse();
-        $responseInfo = $this->oauth->getLastResponseInfo();
-        if (!strcmp($responseInfo['http_code'], '201')) {
-            $response = $this->parseResponse($response);
-
-            if ($response)
-                return $response;
-            else
-                throw new Exception($responseInfo['http_code'], 'Fitbit request failed. Code: ' . $responseInfo['http_code']);
-        } else {
-            $response = $this->parseResponse($response);
-
-            if (!$response)
-                throw new Exception($responseInfo['http_code'], 'Fitbit request failed. Code: ' . $responseInfo['http_code']);
-            else
-                throw new Exception($responseInfo['http_code'], $response->message, 'Fitbit request failed. Code: ' . $responseInfo['http_code']);
-        }
+        $response = $this->service->request('user/-/foods/log.'.$this->responseFormat, "POST");
+        return $this->parseResponse($response);
     }
 
 
@@ -889,20 +446,8 @@ class Api
      */
     public function deleteFood($id)
     {
-        $headers = $this->getHeaders();
-
-        try {
-            $this->oauth->fetch($this->baseApiUrl . "user/-/foods/log/" . $id . ".xml", null,
-                                OAUTH_HTTP_METHOD_DELETE, $headers);
-        } catch (\Exception $E) {
-        }
-
-        $responseInfo = $this->oauth->getLastResponseInfo();
-        if (!strcmp($responseInfo['http_code'], '204')) {
-            return true;
-        } else {
-            throw new Exception($responseInfo['http_code'], 'Fitbit request failed. Code: ' . $responseInfo['http_code']);
-        }
+        $response = $this->service->request('user/-/foods/log/'.$id.'.'.$this->responseFormat, "DELETE");
+        return $this->parseResponse($response);
     }
 
 
@@ -915,19 +460,8 @@ class Api
      */
     public function addFavoriteFood($id)
     {
-        $headers = $this->getHeaders();
-
-        try {
-            $this->oauth->fetch($this->baseApiUrl . "user/-/foods/log/favorite/" . $id . "." . $this->responseFormat, null,
-                                OAUTH_HTTP_METHOD_POST, $headers);
-        } catch (\Exception $E) {
-        }
-        $responseInfo = $this->oauth->getLastResponseInfo();
-        if (!strcmp($responseInfo['http_code'], '201')) {
-            return true;
-        } else {
-            throw new Exception($responseInfo['http_code'], 'Fitbit request failed. Code: ' . $responseInfo['http_code']);
-        }
+        $response = $this->service->request('user/-/foods/log/favorite/'.$id.'.'.$this->responseFormat, "POST");
+        return $this->parseResponse($response);
     }
 
 
@@ -940,18 +474,8 @@ class Api
      */
     public function deleteFavoriteFood($id)
     {
-        $headers = $this->getHeaders();
-        try {
-            $this->oauth->fetch($this->baseApiUrl . "user/-/foods/log/favorite/" . $id . ".xml",
-                                null, OAUTH_HTTP_METHOD_DELETE, $headers);
-        } catch (\Exception $E) {
-        }
-        $responseInfo = $this->oauth->getLastResponseInfo();
-        if (!strcmp($responseInfo['http_code'], '204')) {
-            return true;
-        } else {
-            throw new Exception($responseInfo['http_code'], 'Fitbit request failed. Code: ' . $responseInfo['http_code']);
-        }
+        $response = $this->service->request('user/-/foods/log/favorite/'.$id.'.'.$this->responseFormat, "DELETE");
+        return $this->parseResponse($response);
     }
 
 
@@ -963,24 +487,8 @@ class Api
      */
     public function getMeals()
     {
-        $headers = $this->getHeaders();
-        try {
-            $this->oauth->fetch($this->baseApiUrl . "user/-/meals." . $this->responseFormat,
-                                null, OAUTH_HTTP_METHOD_GET, $headers);
-        } catch (\Exception $E) {
-        }
-        $response = $this->oauth->getLastResponse();
-        $responseInfo = $this->oauth->getLastResponseInfo();
-        if (!strcmp($responseInfo['http_code'], '200')) {
-            $response = $this->parseResponse($response);
-
-            if ($response)
-                return $response;
-            else
-                throw new Exception($responseInfo['http_code'], 'Fitbit request failed. Code: ' . $responseInfo['http_code']);
-        } else {
-            throw new Exception($responseInfo['http_code'], 'Fitbit request failed. Code: ' . $responseInfo['http_code']);
-        }
+        $response = $this->service->request('user/-/meals.'.$this->responseFormat);
+        return $this->parseResponse($response);
     }
 
 
@@ -992,23 +500,8 @@ class Api
      */
     public function getFoodUnits()
     {
-        $headers = $this->getHeaders();
-        try {
-            $this->oauth->fetch($this->baseApiUrl . "foods/units." . $this->responseFormat, null, OAUTH_HTTP_METHOD_GET, $headers);
-        } catch (\Exception $E) {
-        }
-        $response = $this->oauth->getLastResponse();
-        $responseInfo = $this->oauth->getLastResponseInfo();
-        if (!strcmp($responseInfo['http_code'], '200')) {
-            $response = $this->parseResponse($response);
-
-            if ($response)
-                return $response;
-            else
-                throw new Exception($responseInfo['http_code'], 'Fitbit request failed. Code: ' . $responseInfo['http_code']);
-        } else {
-            throw new Exception($responseInfo['http_code'], 'Fitbit request failed. Code: ' . $responseInfo['http_code']);
-        }
+        $response = $this->service->request('foods/units.'.$this->responseFormat);
+        return $this->parseResponse($response);
     }
 
 
@@ -1021,23 +514,8 @@ class Api
      */
     public function searchFoods($query)
     {
-        $headers = $this->getHeaders();
-        try {
-            $this->oauth->fetch($this->baseApiUrl . "foods/search." . $this->responseFormat . "?query=" . rawurlencode($query), null, OAUTH_HTTP_METHOD_GET, $headers);
-        } catch (\Exception $E) {
-        }
-        $response = $this->oauth->getLastResponse();
-        $responseInfo = $this->oauth->getLastResponseInfo();
-        if (!strcmp($responseInfo['http_code'], '200')) {
-            $response = $this->parseResponse($response);
-
-            if ($response)
-                return $response;
-            else
-                throw new Exception($responseInfo['http_code'], 'Fitbit request failed. Code: ' . $responseInfo['http_code']);
-        } else {
-            throw new Exception($responseInfo['http_code'], 'Fitbit request failed. Code: ' . $responseInfo['http_code']);
-        }
+        $response = $this->service->request('foods/search.'.$this->responseFormat. "?query=" . rawurlencode($query));
+        return $this->parseResponse($response);
     }
 
 
@@ -1050,24 +528,8 @@ class Api
      */
     public function getFood($id)
     {
-        $headers = $this->getHeaders();
-        try {
-            $this->oauth->fetch($this->baseApiUrl . "foods/" . $id . "." . $this->responseFormat, null,
-                                OAUTH_HTTP_METHOD_GET, $headers);
-        } catch (\Exception $E) {
-        }
-        $response = $this->oauth->getLastResponse();
-        $responseInfo = $this->oauth->getLastResponseInfo();
-        if (!strcmp($responseInfo['http_code'], '200')) {
-            $response = $this->parseResponse($response);
-
-            if ($response)
-                return $response;
-            else
-                throw new Exception($responseInfo['http_code'], 'Fitbit request failed. Code: ' . $responseInfo['http_code']);
-        } else {
-            throw new Exception($responseInfo['http_code'], 'Fitbit request failed. Code: ' . $responseInfo['http_code']);
-        }
+        $response = $this->service->request('foods/'.$id.'.'.$this->responseFormat);
+        return $this->parseResponse($response);
     }
 
 
@@ -1086,7 +548,6 @@ class Api
      */
     public function createFood($name, $defaultFoodMeasurementUnitId, $defaultServingSize, $calories, $description = null, $formType = null, $nutrition = null)
     {
-        $headers = $this->getHeaders();
         $parameters = array();
         $parameters['name'] = $name;
         $parameters['defaultFoodMeasurementUnitId'] = $defaultFoodMeasurementUnitId;
@@ -1102,26 +563,8 @@ class Api
             }
         }
 
-        try {
-            $this->oauth->fetch($this->baseApiUrl . "foods." . $this->responseFormat, $parameters, OAUTH_HTTP_METHOD_POST, $headers);
-        } catch (\Exception $E) {
-        }
-        $response = $this->oauth->getLastResponse();
-        $responseInfo = $this->oauth->getLastResponseInfo();
-        if (!strcmp($responseInfo['http_code'], '201')) {
-            $response = $this->parseResponse($response);
-
-            if ($response)
-                return $response;
-            else
-                throw new Exception($responseInfo['http_code'], 'Fitbit request failed. Code: ' . $responseInfo['http_code']);
-        } else {
-            $response = $this->parseResponse($response);
-            if (!$xml)
-                throw new Exception($responseInfo['http_code'], 'Fitbit request failed. Code: ' . $responseInfo['http_code']);
-            else
-                throw new Exception($responseInfo['http_code'], $response->message, 'Fitbit request failed. Code: ' . $responseInfo['http_code']);
-        }
+        $response = $this->service->request('foods.'.$this->responseFormat, "POST", $parameters);
+        return $this->parseResponse($response);
     }
 
 
@@ -1135,26 +578,12 @@ class Api
      */
     public function getWater($date, $dateStr = null)
     {
-        $headers = $this->getHeaders();
         if (!isset($dateStr)) {
             $dateStr = $date->format('Y-m-d');
         }
-        try {
-            $this->oauth->fetch($this->baseApiUrl . "user/-/foods/log/water/date/" . $dateStr . "." . $this->responseFormat, null, OAUTH_HTTP_METHOD_GET, $headers);
-        } catch (\Exception $E) {
-        }
-        $response = $this->oauth->getLastResponse();
-        $responseInfo = $this->oauth->getLastResponseInfo();
-        if (!strcmp($responseInfo['http_code'], '200')) {
-            $response = $this->parseResponse($response);
 
-            if ($response)
-                return $response;
-            else
-                throw new Exception($responseInfo['http_code'], 'Fitbit request failed. Code: ' . $responseInfo['http_code']);
-        } else {
-            throw new Exception($responseInfo['http_code'], 'Fitbit request failed. Code: ' . $responseInfo['http_code']);
-        }
+        $response = $this->service->request("user/-/foods/log/water/date/".$dateStr.".".$this->responseFormat);
+        return $this->parseResponse($response);
     }
 
 
@@ -1171,35 +600,14 @@ class Api
     {
         $waterUnits = array('ml', 'fl oz', 'cup');
 
-        $headers = $this->getHeaders();
         $parameters = array();
         $parameters['date'] = $date->format('Y-m-d');
         $parameters['amount'] = $amount;
         if (isset($waterUnit) && in_array($waterUnit, $waterUnits))
             $parameters['unit'] = $waterUnit;
 
-        try {
-            $this->oauth->fetch($this->baseApiUrl . "user/-/foods/log/water." . $this->responseFormat, $parameters,
-                                OAUTH_HTTP_METHOD_POST, $headers);
-        } catch (\Exception $E) {
-        }
-        $response = $this->oauth->getLastResponse();
-        $responseInfo = $this->oauth->getLastResponseInfo();
-        if (!strcmp($responseInfo['http_code'], '201')) {
-            $response = $this->parseResponse($response);
-
-            if ($response)
-                return $response;
-            else
-                throw new Exception($responseInfo['http_code'], 'Fitbit request failed. Code: ' . $responseInfo['http_code']);
-        } else {
-            $response = $this->parseResponse($response);
-
-            if (!$response)
-                throw new Exception($responseInfo['http_code'], 'Fitbit request failed. Code: ' . $responseInfo['http_code']);
-            else
-                throw new Exception($responseInfo['http_code'], $response->message, 'Fitbit request failed. Code: ' . $responseInfo['http_code']);
-        }
+        $response = $this->service->request('user/-/foods/log/water.'.$this->responseFormat, "POST", $parameters);
+        return $this->parseResponse($response);
     }
 
 
@@ -1212,18 +620,8 @@ class Api
      */
     public function deleteWater($id)
     {
-        $headers = $this->getHeaders();
-        try {
-            $this->oauth->fetch($this->baseApiUrl . "user/-/foods/log/water/" . $id . ".xml", null,
-                                OAUTH_HTTP_METHOD_DELETE, $headers);
-        } catch (\Exception $E) {
-        }
-        $responseInfo = $this->oauth->getLastResponseInfo();
-        if (!strcmp($responseInfo['http_code'], '204')) {
-            return true;
-        } else {
-            throw new Exception($responseInfo['http_code'], 'Fitbit request failed. Code: ' . $responseInfo['http_code']);
-        }
+        $response = $this->service->request('user/-/foods/log/water/'.$id.'.'.$this->responseFormat, "DELETE");
+        return $this->parseResponse($response);
     }
 
 
@@ -1237,27 +635,12 @@ class Api
      */
     public function getSleep($date, $dateStr = null)
     {
-        $headers = $this->getHeaders();
         if (!isset($dateStr)) {
             $dateStr = $date->format('Y-m-d');
         }
-        try {
-            $this->oauth->fetch($this->baseApiUrl . "user/" . $this->userId . "/sleep/date/" . $dateStr . "." . $this->responseFormat,
-                                null, OAUTH_HTTP_METHOD_GET, $headers);
-        } catch (\Exception $E) {
-        }
-        $response = $this->oauth->getLastResponse();
-        $responseInfo = $this->oauth->getLastResponseInfo();
-        if (!strcmp($responseInfo['http_code'], '200')) {
-            $response = $this->parseResponse($response);
 
-            if ($response)
-                return $response;
-            else
-                throw new Exception($responseInfo['http_code'], 'Fitbit request failed. Code: ' . $responseInfo['http_code']);
-        } else {
-            throw new Exception($responseInfo['http_code'], 'Fitbit request failed. Code: ' . $responseInfo['http_code']);
-        }
+        $response = $this->service->request("user/" . $this->userId . "/sleep/date/".$dateStr.".".$this->responseFormat);
+        return $this->parseResponse($response);
     }
 
 
@@ -1271,34 +654,13 @@ class Api
      */
     public function logSleep($date, $duration)
     {
-        $headers = $this->getHeaders();
         $parameters = array();
         $parameters['date'] = $date->format('Y-m-d');
         $parameters['startTime'] = $date->format('H:i');
         $parameters['duration'] = $duration;
 
-        try {
-            $this->oauth->fetch($this->baseApiUrl . "user/-/sleep." . $this->responseFormat, $parameters,
-                                OAUTH_HTTP_METHOD_POST, $headers);
-        } catch (\Exception $E) {
-        }
-        $response = $this->oauth->getLastResponse();
-        $responseInfo = $this->oauth->getLastResponseInfo();
-        if (!strcmp($responseInfo['http_code'], '201')) {
-            $response = $this->parseResponse($response);
-
-            if ($response)
-                return $response;
-            else
-                throw new Exception($responseInfo['http_code'], 'Fitbit request failed. Code: ' . $responseInfo['http_code']);
-        } else {
-            $response = $this->parseResponse($response);
-
-            if (!$response)
-                throw new Exception($responseInfo['http_code'], 'Fitbit request failed. Code: ' . $responseInfo['http_code']);
-            else
-                throw new Exception($responseInfo['http_code'], $response->message, 'Fitbit request failed. Code: ' . $responseInfo['http_code']);
-        }
+        $response = $this->service->request('user/-/sleep.'.$this->responseFormat, "POST", $parameters);
+        return $this->parseResponse($response);
     }
 
 
@@ -1311,18 +673,8 @@ class Api
      */
     public function deleteSleep($id)
     {
-        $headers = $this->getHeaders();
-        try {
-            $this->oauth->fetch($this->baseApiUrl . "user/-/sleep/" . $id . ".xml", null,
-                                OAUTH_HTTP_METHOD_DELETE, $headers);
-        } catch (\Exception $E) {
-        }
-        $responseInfo = $this->oauth->getLastResponseInfo();
-        if (!strcmp($responseInfo['http_code'], '204')) {
-            return true;
-        } else {
-            throw new Exception($responseInfo['http_code'], 'Fitbit request failed. Code: ' . $responseInfo['http_code']);
-        }
+        $response = $this->service->request('user/-/sleep/'.$id.'.'.$this->responseFormat, "DELETE");
+        return $this->parseResponse($response);
     }
 
 
@@ -1336,27 +688,12 @@ class Api
      */
     public function getBody($date, $dateStr = null)
     {
-        $headers = $this->getHeaders();
         if (!isset($dateStr)) {
             $dateStr = $date->format('Y-m-d');
         }
-        try {
-            $this->oauth->fetch($this->baseApiUrl . "user/" . $this->userId . "/body/date/" . $dateStr . "." . $this->responseFormat,
-                                null, OAUTH_HTTP_METHOD_GET, $headers);
-        } catch (\Exception $E) {
-        }
-        $response = $this->oauth->getLastResponse();
-        $responseInfo = $this->oauth->getLastResponseInfo();
-        if (!strcmp($responseInfo['http_code'], '200')) {
-            $response = $this->parseResponse($response);
 
-            if ($response)
-                return $response;
-            else
-                throw new Exception($responseInfo['http_code'], 'Fitbit request failed. Code: ' . $responseInfo['http_code']);
-        } else {
-            throw new Exception($responseInfo['http_code'], 'Fitbit request failed. Code: ' . $responseInfo['http_code']);
-        }
+        $response = $this->service->request("user/" . $this->userId . "/body/date/".$dateStr.".".$this->responseFormat);
+        return $this->parseResponse($response);
     }
 
     /**
@@ -1379,7 +716,6 @@ class Api
 
     public function logBody($date, $weight = null, $fat = null, $bicep = null, $calf = null, $chest = null, $forearm = null, $hips = null, $neck = null, $thigh = null, $waist = null)
     {
-        $headers = $this->getHeaders();
         $parameters = array();
         $parameters['date'] = $date->format('Y-m-d');
 
@@ -1404,29 +740,8 @@ class Api
         if (isset($waist))
             $parameters['waist'] = $waist;
 
-        try {
-            $this->oauth->fetch($this->baseApiUrl . "user/-/body." . $this->responseFormat,
-                                $parameters, OAUTH_HTTP_METHOD_POST, $headers);
-        } catch (\Exception $E) {
-        }
-
-        $response = $this->oauth->getLastResponse();
-        $responseInfo = $this->oauth->getLastResponseInfo();
-        if (!strcmp($responseInfo['http_code'], '201')) {
-            $response = $this->parseResponse($response);
-
-            if ($response)
-                return $response;
-            else
-                throw new Exception($responseInfo['http_code'], 'Fitbit request failed. Code: ' . $responseInfo['http_code']);
-        } else {
-            $response = $this->parseResponse($response);
-
-            if (!$response)
-                throw new Exception($responseInfo['http_code'], 'Fitbit request failed. Code: ' . $responseInfo['http_code']);
-            else
-                throw new Exception($responseInfo['http_code'], $response->message, 'Fitbit request failed. Code: ' . $responseInfo['http_code']);
-        }
+        $response = $this->service->request('user/-/body.'.$this->responseFormat, "POST", $parameters);
+        return $this->parseResponse($response);
     }
 
 
@@ -1440,30 +755,13 @@ class Api
      */
     public function logWeight($weight, $date = null)
     {
-        $headers = $this->getHeaders();
         $parameters = array();
         $parameters['weight'] = $weight;
         if (isset($date))
             $parameters['date'] = $date->format('Y-m-d');
 
-        try {
-            $this->oauth->fetch($this->baseApiUrl . "user/-/body/weight." . $this->responseFormat,
-                                $parameters, OAUTH_HTTP_METHOD_POST, $headers);
-        } catch (\Exception $E) {
-        }
-
-        $response = $this->oauth->getLastResponse();
-        $responseInfo = $this->oauth->getLastResponseInfo();
-        if (!strcmp($responseInfo['http_code'], '201')) {
-            return true;
-        } else {
-            $response = $this->parseResponse($response);
-
-            if (!$response)
-                throw new Exception($responseInfo['http_code'], 'Fitbit request failed. Code: ' . $responseInfo['http_code']);
-            else
-                throw new Exception($responseInfo['http_code'], $response->message, 'Fitbit request failed. Code: ' . $responseInfo['http_code']);
-        }
+        $response = $this->service->request('user/-/body/weight.'.$this->responseFormat, "POST", $parameters);
+        return $this->parseResponse($response);
     }
 
 
@@ -1477,26 +775,12 @@ class Api
      */
     public function getBloodPressure($date, $dateStr)
     {
-        $headers = $this->getHeaders();
         if (!isset($dateStr)) {
             $dateStr = $date->format('Y-m-d');
         }
-        try {
-            $this->oauth->fetch($this->baseApiUrl . "user/-/bp/date/" . $dateStr . "." . $this->responseFormat, null, OAUTH_HTTP_METHOD_GET, $headers);
-        } catch (\Exception $E) {
-        }
-        $response = $this->oauth->getLastResponse();
-        $responseInfo = $this->oauth->getLastResponseInfo();
-        if (!strcmp($responseInfo['http_code'], '200')) {
-            $response = $this->parseResponse($response);
 
-            if ($response)
-                return $response;
-            else
-                throw new Exception($responseInfo['http_code'], 'Fitbit request failed. Code: ' . $responseInfo['http_code']);
-        } else {
-            throw new Exception($responseInfo['http_code'], 'Fitbit request failed. Code: ' . $responseInfo['http_code']);
-        }
+        $response = $this->service->request("user/-/bp/date/".$dateStr.".".$this->responseFormat);
+        return $this->parseResponse($response);
     }
 
 
@@ -1512,7 +796,6 @@ class Api
      */
     public function logBloodPressure($date, $systolic, $diastolic, $time = null)
     {
-        $headers = $this->getHeaders();
         $parameters = array();
         $parameters['date'] = $date->format('Y-m-d');
         $parameters['systolic'] = $systolic;
@@ -1520,28 +803,8 @@ class Api
         if (isset($time))
             $parameters['time'] = $time->format('H:i');
 
-        try {
-            $this->oauth->fetch($this->baseApiUrl . "user/-/bp." . $this->responseFormat, $parameters,
-                                OAUTH_HTTP_METHOD_POST, $headers);
-        } catch (\Exception $E) {
-        }
-        $response = $this->oauth->getLastResponse();
-        $responseInfo = $this->oauth->getLastResponseInfo();
-        if (!strcmp($responseInfo['http_code'], '201')) {
-            $response = $this->parseResponse($response);
-
-            if ($response)
-                return $response;
-            else
-                throw new Exception($responseInfo['http_code'], 'Fitbit request failed. Code: ' . $responseInfo['http_code']);
-        } else {
-            $response = $this->parseResponse($response);
-
-            if (!$response)
-                throw new Exception($responseInfo['http_code'], 'Fitbit request failed. Code: ' . $responseInfo['http_code']);
-            else
-                throw new Exception($responseInfo['http_code'], $response->message, 'Fitbit request failed. Code: ' . $responseInfo['http_code']);
-        }
+        $response = $this->service->request('user/-/bp.'.$this->responseFormat, "POST", $parameters);
+        return $this->parseResponse($response);
     }
 
 
@@ -1554,18 +817,8 @@ class Api
      */
     public function deleteBloodPressure($id)
     {
-        $headers = $this->getHeaders();
-        try {
-            $this->oauth->fetch($this->baseApiUrl . "user/-/bp/" . $id . ".xml", null,
-                                OAUTH_HTTP_METHOD_DELETE, $headers);
-        } catch (\Exception $E) {
-        }
-        $responseInfo = $this->oauth->getLastResponseInfo();
-        if (!strcmp($responseInfo['http_code'], '204')) {
-            return true;
-        } else {
-            throw new Exception($responseInfo['http_code'], 'Fitbit request failed. Code: ' . $responseInfo['http_code']);
-        }
+        $response = $this->service->request('user/-/bp/'.$id.'.'.$this->responseFormat, "DELETE");
+        return $this->parseResponse($response);
     }
 
 
@@ -1579,26 +832,12 @@ class Api
      */
     public function getGlucose($date, $dateStr)
     {
-        $headers = $this->getHeaders();
         if (!isset($dateStr)) {
             $dateStr = $date->format('Y-m-d');
         }
-        try {
-            $this->oauth->fetch($this->baseApiUrl . "user/-/glucose/date/" . $dateStr . "." . $this->responseFormat, null, OAUTH_HTTP_METHOD_GET, $headers);
-        } catch (\Exception $E) {
-        }
-        $response = $this->oauth->getLastResponse();
-        $responseInfo = $this->oauth->getLastResponseInfo();
-        if (!strcmp($responseInfo['http_code'], '200')) {
-            $response = $this->parseResponse($response);
 
-            if ($response)
-                return $response;
-            else
-                throw new Exception($responseInfo['http_code'], 'Fitbit request failed. Code: ' . $responseInfo['http_code']);
-        } else {
-            throw new Exception($responseInfo['http_code'], 'Fitbit request failed. Code: ' . $responseInfo['http_code']);
-        }
+        $response = $this->service->request("user/-/glucose/date/".$dateStr.".".$this->responseFormat);
+        return $this->parseResponse($response);
     }
 
     /**
@@ -1614,7 +853,6 @@ class Api
      */
     public function logGlucose($date, $tracker, $glucose, $hba1c = null, $time = null)
     {
-        $headers = $this->getHeaders();
         $parameters = array();
         $parameters['date'] = $date->format('Y-m-d');
         $parameters['tracker'] = $tracker;
@@ -1624,28 +862,8 @@ class Api
         if (isset($time))
             $parameters['time'] = $time->format('H:i');
 
-        try {
-            $this->oauth->fetch($this->baseApiUrl . "user/-/glucose." . $this->responseFormat, $parameters,
-                                OAUTH_HTTP_METHOD_POST, $headers);
-        } catch (\Exception $E) {
-        }
-        $response = $this->oauth->getLastResponse();
-        $responseInfo = $this->oauth->getLastResponseInfo();
-        if (!strcmp($responseInfo['http_code'], '201')) {
-            $response = $this->parseResponse($response);
-
-            if ($response)
-                return $response;
-            else
-                throw new Exception($responseInfo['http_code'], 'Fitbit request failed. Code: ' . $responseInfo['http_code']);
-        } else {
-            $response = $this->parseResponse($response);
-
-            if (!$response)
-                throw new Exception($responseInfo['http_code'], 'Fitbit request failed. Code: ' . $responseInfo['http_code']);
-            else
-                throw new Exception($responseInfo['http_code'], $response->message, 'Fitbit request failed. Code: ' . $responseInfo['http_code']);
-        }
+        $response = $this->service->request('user/-/glucose.'.$this->responseFormat, "POST", $parameters);
+        return $this->parseResponse($response);
     }
 
 
@@ -1659,26 +877,12 @@ class Api
      */
     public function getHeartRate($date, $dateStr = null)
     {
-        $headers = $this->getHeaders();
         if (!isset($dateStr)) {
             $dateStr = $date->format('Y-m-d');
         }
-        try {
-            $this->oauth->fetch($this->baseApiUrl . "user/-/heart/date/" . $dateStr . "." . $this->responseFormat, null, OAUTH_HTTP_METHOD_GET, $headers);
-        } catch (\Exception $E) {
-        }
-        $response = $this->oauth->getLastResponse();
-        $responseInfo = $this->oauth->getLastResponseInfo();
-        if (!strcmp($responseInfo['http_code'], '200')) {
-            $response = $this->parseResponse($response);
 
-            if ($response)
-                return $response;
-            else
-                throw new Exception($responseInfo['http_code'], 'Fitbit request failed. Code: ' . $responseInfo['http_code']);
-        } else {
-            throw new Exception($responseInfo['http_code'], 'Fitbit request failed. Code: ' . $responseInfo['http_code']);
-        }
+        $response = $this->service->request("user/-/heart/date/".$dateStr.".".$this->responseFormat);
+        return $this->parseResponse($response);
     }
 
 
@@ -1694,7 +898,6 @@ class Api
      */
     public function logHeartRate($date, $tracker, $heartRate, $time = null)
     {
-        $headers = $this->getHeaders();
         $parameters = array();
         $parameters['date'] = $date->format('Y-m-d');
         $parameters['tracker'] = $tracker;
@@ -1702,28 +905,8 @@ class Api
         if (isset($time))
             $parameters['time'] = $time->format('H:i');
 
-        try {
-            $this->oauth->fetch($this->baseApiUrl . "user/-/heart." . $this->responseFormat, $parameters,
-                                OAUTH_HTTP_METHOD_POST, $headers);
-        } catch (\Exception $E) {
-        }
-        $response = $this->oauth->getLastResponse();
-        $responseInfo = $this->oauth->getLastResponseInfo();
-        if (!strcmp($responseInfo['http_code'], '201')) {
-            $response = $this->parseResponse($response);
-
-            if ($response)
-                return $response;
-            else
-                throw new Exception($responseInfo['http_code'], 'Fitbit request failed. Code: ' . $responseInfo['http_code']);
-        } else {
-            $response = $this->parseResponse($response);
-
-            if (!$response)
-                throw new Exception($responseInfo['http_code'], 'Fitbit request failed. Code: ' . $responseInfo['http_code']);
-            else
-                throw new Exception($responseInfo['http_code'], $response->message, 'Fitbit request failed. Code: ' . $responseInfo['http_code']);
-        }
+        $response = $this->service->request('user/-/heart.'.$this->responseFormat, "POST", $parameters);
+        return $this->parseResponse($response);
     }
 
 
@@ -1736,18 +919,8 @@ class Api
      */
     public function deleteHeartRate($id)
     {
-        $headers = $this->getHeaders();
-        try {
-            $this->oauth->fetch($this->baseApiUrl . "user/-/heart/" . $id . ".xml", null,
-                                OAUTH_HTTP_METHOD_DELETE, $headers);
-        } catch (\Exception $E) {
-        }
-        $responseInfo = $this->oauth->getLastResponseInfo();
-        if (!strcmp($responseInfo['http_code'], '204')) {
-            return true;
-        } else {
-            throw new Exception($responseInfo['http_code'], 'Fitbit request failed. Code: ' . $responseInfo['http_code']);
-        }
+        $response = $this->service->request('user/-/heart/'.$id.'.'.$this->responseFormat, "DELETE");
+        return $this->parseResponse($response);
     }
 
 
@@ -1880,21 +1053,8 @@ class Api
                 return false;
         }
 
-
-        $headers = $this->getHeaders();
-        try {
-            $this->oauth->fetch($this->baseApiUrl . "user/" . $this->userId . $path . '/date/' . (is_string($basedate) ? $basedate : $basedate->format('Y-m-d')) . "/" . (is_string($to_period) ? $to_period : $to_period->format('Y-m-d')) . ".json", null, OAUTH_HTTP_METHOD_GET, $headers);
-        } catch (\Exception $E) {
-        }
-        $response = $this->oauth->getLastResponse();
-        $responseInfo = $this->oauth->getLastResponseInfo();
-        if (!strcmp($responseInfo['http_code'], '200')) {
-            $json = json_decode($response);
-            $path = str_replace('/', '-', substr($path, 1));
-            return $json->$path;
-        } else {
-            throw new Exception($responseInfo['http_code'], 'Fitbit request failed. Code: ' . $responseInfo['http_code']);
-        }
+        $response = $this->service->request("user/" . $this->userId . $path . '/date/' . (is_string($basedate) ? $basedate : $basedate->format('Y-m-d')) . "/" . (is_string($to_period) ? $to_period : $to_period->format('Y-m-d')) . '.' . $this->responseFormat);
+        return $this->parseResponse($response);
     }
 
 
@@ -1931,21 +1091,8 @@ class Api
                 return false;
         }
 
-
-        $headers = $this->getHeaders();
-        try {
-            $this->oauth->fetch($this->baseApiUrl . "user/-" . $path . "/date/" . (is_string($date) ? $date : $date->format('Y-m-d')) . "/1d" . ((!empty($start_time) && !empty($end_time)) ? "/time/" . $start_time->format('H:i') . "/" . $end_time->format('H:i') : "") . ".json", null, OAUTH_HTTP_METHOD_GET, $headers);
-        } catch (\Exception $E) {
-        }
-        $response = $this->oauth->getLastResponse();
-        $responseInfo = $this->oauth->getLastResponseInfo();
-        if (!strcmp($responseInfo['http_code'], '200')) {
-            $json = json_decode($response);
-            $path = str_replace('/', '-', substr($path, 1)) . "-intraday";
-            return (isset($json->$path)) ? $json->$path : NULL;
-        } else {
-            throw new Exception($responseInfo['http_code'], 'Fitbit request failed. Code: ' . $responseInfo['http_code']);
-        }
+        $response = $this->service->request("user/-" . $path . "/date/" . (is_string($date) ? $date : $date->format('Y-m-d')) . "/1d" . ((!empty($start_time) && !empty($end_time)) ? "/time/" . $start_time->format('H:i') . "/" . $end_time->format('H:i') : "") . '.' . $this->responseFormat);
+        return $this->parseResponse($response);
     }
 
 
@@ -1957,23 +1104,8 @@ class Api
      */
     public function getActivityStats()
     {
-        $headers = $this->getHeaders();
-        try {
-            $this->oauth->fetch($this->baseApiUrl . "user/" . $this->userId . "/activities." . $this->responseFormat, null, OAUTH_HTTP_METHOD_GET, $headers);
-        } catch (\Exception $E) {
-        }
-        $response = $this->oauth->getLastResponse();
-        $responseInfo = $this->oauth->getLastResponseInfo();
-        if (!strcmp($responseInfo['http_code'], '200')) {
-            $response = $this->parseResponse($response);
-
-            if ($response)
-                return $response;
-            else
-                throw new Exception($responseInfo['http_code'], 'Fitbit request failed. Code: ' . $responseInfo['http_code']);
-        } else {
-            throw new Exception($responseInfo['http_code'], 'Fitbit request failed. Code: ' . $responseInfo['http_code']);
-        }
+        $response = $this->service->request("user/" . $this->userId . "/activities.".$this->responseFormat);
+        return $this->parseResponse($response);
     }
 
 
@@ -1985,23 +1117,8 @@ class Api
      */
     public function getDevices()
     {
-        $headers = $this->getHeaders();
-        try {
-            $this->oauth->fetch($this->baseApiUrl . "user/-/devices." . $this->responseFormat, null, OAUTH_HTTP_METHOD_GET, $headers);
-        } catch (\Exception $E) {
-        }
-        $response = $this->oauth->getLastResponse();
-        $responseInfo = $this->oauth->getLastResponseInfo();
-        if (!strcmp($responseInfo['http_code'], '200')) {
-            $response = $this->parseResponse($response);
-
-            if ($response)
-                return $response;
-            else
-                throw new Exception($responseInfo['http_code'], 'Fitbit request failed. Code: ' . $responseInfo['http_code']);
-        } else {
-            throw new Exception($responseInfo['http_code'], 'Fitbit request failed. Code: ' . $responseInfo['http_code']);
-        }
+        $response = $this->service->request("user/-/devices.".$this->responseFormat);
+        return $this->parseResponse($response);
     }
 
     /**
@@ -2012,23 +1129,8 @@ class Api
      */
     public function getFriends()
     {
-        $headers = $this->getHeaders();
-        try {
-            $this->oauth->fetch($this->baseApiUrl . "user/" . $this->userId . "/friends." . $this->responseFormat, null, OAUTH_HTTP_METHOD_GET, $headers);
-        } catch (\Exception $E) {
-        }
-        $response = $this->oauth->getLastResponse();
-        $responseInfo = $this->oauth->getLastResponseInfo();
-        if (!strcmp($responseInfo['http_code'], '200')) {
-            $response = $this->parseResponse($response);
-
-            if ($response)
-                return $response;
-            else
-                throw new Exception($responseInfo['http_code'], 'Fitbit request failed. Code: ' . $responseInfo['http_code']);
-        } else {
-            throw new Exception($responseInfo['http_code'], 'Fitbit request failed. Code: ' . $responseInfo['http_code']);
-        }
+        $response = $this->service->request("user/" . $this->userId . "/friends.".$this->responseFormat);
+        return $this->parseResponse($response);
     }
 
 
@@ -2041,23 +1143,8 @@ class Api
      */
     public function getFriendsLeaderboard($period = '7d')
     {
-        $headers = $this->getHeaders();
-        try {
-            $this->oauth->fetch($this->baseApiUrl . "user/-/friends/leaders/" . $period . "." . $this->responseFormat, null, OAUTH_HTTP_METHOD_GET, $headers);
-        } catch (\Exception $E) {
-        }
-        $response = $this->oauth->getLastResponse();
-        $responseInfo = $this->oauth->getLastResponseInfo();
-        if (!strcmp($responseInfo['http_code'], '200')) {
-            $response = $this->parseResponse($response);
-
-            if ($response)
-                return $response;
-            else
-                throw new Exception($responseInfo['http_code'], 'Fitbit request failed. Code: ' . $responseInfo['http_code']);
-        } else {
-            throw new Exception($responseInfo['http_code'], 'Fitbit request failed. Code: ' . $responseInfo['http_code']);
-        }
+        $response = $this->service->request("user/-/friends/leaders/" . $period . ".".$this->responseFormat);
+        return $this->parseResponse($response);
     }
 
 
@@ -2071,30 +1158,14 @@ class Api
      */
     public function inviteFriend($userId = null, $email = null)
     {
-        $headers = $this->getHeaders();
         $parameters = array();
         if (isset($userId))
             $parameters['invitedUserId'] = $userId;
         if (isset($email))
             $parameters['invitedUserEmail'] = $email;
 
-        try {
-            $this->oauth->fetch($this->baseApiUrl . "user/-/friends/invitations." . $this->responseFormat, $parameters, OAUTH_HTTP_METHOD_POST, $headers);
-        } catch (\Exception $E) {
-        }
-
-        $response = $this->oauth->getLastResponse();
-        $responseInfo = $this->oauth->getLastResponseInfo();
-        if (!strcmp($responseInfo['http_code'], '201')) {
-            return true;
-        } else {
-            $response = $this->parseResponse($response);
-
-            if (!$response)
-                throw new Exception($responseInfo['http_code'], 'Fitbit request failed. Code: ' . $responseInfo['http_code']);
-            else
-                throw new Exception($responseInfo['http_code'], $response->message, 'Fitbit request failed. Code: ' . $responseInfo['http_code']);
-        }
+        $response = $this->service->request('user/-/friends/invitations.'.$this->responseFormat, "POST", $parameters);
+        return $this->parseResponse($response);
     }
 
 
@@ -2107,27 +1178,11 @@ class Api
      */
     public function acceptFriend($userId)
     {
-        $headers = $this->getHeaders();
         $parameters = array();
         $parameters['accept'] = 'true';
 
-        try {
-            $this->oauth->fetch($this->baseApiUrl . "user/-/friends/invitations/" . $userId . "." . $this->responseFormat, $parameters, OAUTH_HTTP_METHOD_POST, $headers);
-        } catch (\Exception $E) {
-        }
-
-        $response = $this->oauth->getLastResponse();
-        $responseInfo = $this->oauth->getLastResponseInfo();
-        if (!strcmp($responseInfo['http_code'], '204')) {
-            return true;
-        } else {
-            $response = $this->parseResponse($response);
-
-            if (!$response)
-                throw new Exception($responseInfo['http_code'], 'Fitbit request failed. Code: ' . $responseInfo['http_code']);
-            else
-                throw new Exception($responseInfo['http_code'], $response->message, 'Fitbit request failed. Code: ' . $responseInfo['http_code']);
-        }
+        $response = $this->service->request("user/-/friends/invitations/" . $userId . "." . $this->responseFormat, "POST", $parameters);
+        return $this->parseResponse($response);
     }
 
 
@@ -2140,27 +1195,11 @@ class Api
      */
     public function rejectFriend($userId)
     {
-        $headers = $this->getHeaders();
         $parameters = array();
-        $parameters['accept'] = 'true';
+        $parameters['accept'] = 'false';
 
-        try {
-            $this->oauth->fetch($this->baseApiUrl . "user/-/friends/invitations/" . $userId . "." . $this->responseFormat, $parameters, OAUTH_HTTP_METHOD_POST, $headers);
-        } catch (\Exception $E) {
-        }
-
-        $response = $this->oauth->getLastResponse();
-        $responseInfo = $this->oauth->getLastResponseInfo();
-        if (!strcmp($responseInfo['http_code'], '204')) {
-            return true;
-        } else {
-            $response = $this->parseResponse($response);
-
-            if (!$response)
-                throw new Exception($responseInfo['http_code'], 'Fitbit request failed. Code: ' . $responseInfo['http_code']);
-            else
-                throw new Exception($responseInfo['http_code'], $response->message, 'Fitbit request failed. Code: ' . $responseInfo['http_code']);
-        }
+        $response = $this->service->request("user/-/friends/invitations/" . $userId . "." . $this->responseFormat, "POST", $parameters);
+        return $this->parseResponse($response);
     }
 
 
@@ -2174,11 +1213,9 @@ class Api
      */
     public function addSubscription($id, $path = null, $subscriberId = null)
     {
-        $headers = $this->getHeaders();
         $userHeaders = array();
         if ($subscriberId)
             $userHeaders['X-Fitbit-Subscriber-Id'] = $subscriberId;
-        $headers = array_merge($headers, $userHeaders);
 
 
         if (isset($path))
@@ -2186,23 +1223,8 @@ class Api
         else
             $path = '';
 
-        try {
-            $this->oauth->fetch($this->baseApiUrl . "user/-" . $path . "/apiSubscriptions/" . $id . "." . $this->responseFormat, null, OAUTH_HTTP_METHOD_POST, $headers);
-        } catch (\Exception $E) {
-        }
-
-        $response = $this->oauth->getLastResponse();
-        $responseInfo = $this->oauth->getLastResponseInfo();
-        if (!strcmp($responseInfo['http_code'], '200') || !strcmp($responseInfo['http_code'], '201')) {
-            $response = $this->parseResponse($response);
-
-            if ($response)
-                return $response;
-            else
-                throw new Exception($responseInfo['http_code'], 'Fitbit request failed. Code: ' . $responseInfo['http_code']);
-        } else {
-            throw new Exception($responseInfo['http_code'], 'Fitbit request failed. Code: ' . $responseInfo['http_code']);
-        }
+        $response = $this->service->request("user/-" . $path . "/apiSubscriptions/" . $id . "." . $this->responseFormat, "POST", $parameters, $userHeaders);
+        return $this->parseResponse($response);
     }
 
 
@@ -2216,23 +1238,13 @@ class Api
      */
     public function deleteSubscription($id, $path = null)
     {
-        $headers = $this->getHeaders();
         if (isset($path))
             $path = '/' . $path;
         else
             $path = '';
 
-        try {
-            $this->oauth->fetch($this->baseApiUrl . "user/-" . $path . "/apiSubscriptions/" . $id . ".xml", null, OAUTH_HTTP_METHOD_DELETE, $headers);
-        } catch (\Exception $E) {
-        }
-
-        $responseInfo = $this->oauth->getLastResponseInfo();
-        if (!strcmp($responseInfo['http_code'], '204')) {
-            return true;
-        } else {
-            throw new Exception($responseInfo['http_code'], 'Fitbit request failed. Code: ' . $responseInfo['http_code']);
-        }
+        $response = $this->service->request("user/-" . $path . "/apiSubscriptions/" . $id . "." . $this->responseFormat, "DELETE");
+        return $this->parseResponse($response);
     }
 
 
@@ -2244,24 +1256,8 @@ class Api
      */
     public function getSubscriptions()
     {
-        $headers = $this->getHeaders();
-
-        try {
-            $this->oauth->fetch($this->baseApiUrl . "user/-/apiSubscriptions." . $this->responseFormat, null, OAUTH_HTTP_METHOD_GET, $headers);
-        } catch (\Exception $E) {
-        }
-        $response = $this->oauth->getLastResponse();
-        $responseInfo = $this->oauth->getLastResponseInfo();
-        if (!strcmp($responseInfo['http_code'], '200')) {
-            $response = $this->parseResponse($response);
-
-            if ($response)
-                return $response;
-            else
-                throw new Exception($responseInfo['http_code'], 'Fitbit request failed. Code: ' . $responseInfo['http_code']);
-        } else {
-            throw new Exception($responseInfo['http_code'], 'Fitbit request failed. Code: ' . $responseInfo['http_code']);
-        }
+        $response = $this->service->request("user/-/apiSubscriptions.".$this->responseFormat);
+        return $this->parseResponse($response);
     }
 
 
@@ -2273,37 +1269,16 @@ class Api
      */
     public function getRateLimit()
     {
-        $headers = $this->getHeaders();
+        $clientAndUser = $this->parseResponse($this->service->request("account/clientAndViewerRateLimitStatus.".$this->responseFormat));
+        $client = $this->parseResponse($this->service->request("account/clientRateLimitStatus.".$this->responseFormat));
 
-        try {
-            $this->oauth->fetch($this->baseApiUrl . "account/clientAndViewerRateLimitStatus.xml", null, OAUTH_HTTP_METHOD_GET, $headers);
-        } catch (\Exception $E) {
-        }
-        $response = $this->oauth->getLastResponse();
-        $responseInfo = $this->oauth->getLastResponseInfo();
-        if (!strcmp($responseInfo['http_code'], '200')) {
-            $xmlClientAndUser = simplexml_load_string($response);
-        } else {
-            throw new Exception($responseInfo['http_code'], 'Fitbit request failed. Code: ' . $responseInfo['http_code']);
-        }
-        try {
-            $this->oauth->fetch($this->baseApiUrl . "account/clientRateLimitStatus.xml", null, OAUTH_HTTP_METHOD_GET, $headers);
-        } catch (\Exception $E) {
-        }
-        $response = $this->oauth->getLastResponse();
-        $responseInfo = $this->oauth->getLastResponseInfo();
-        if (!strcmp($responseInfo['http_code'], '200')) {
-            $xmlClient = simplexml_load_string($response);
-        } else {
-            throw new Exception($responseInfo['http_code'], 'Fitbit request failed. Code: ' . $responseInfo['http_code']);
-        }
         return new RateLimiting(
-            $xmlClientAndUser->rateLimitStatus->remainingHits,
-            $xmlClient->rateLimitStatus->remainingHits,
-            $xmlClientAndUser->rateLimitStatus->resetTime,
-            $xmlClient->rateLimitStatus->resetTime,
-            $xmlClientAndUser->rateLimitStatus->hourlyLimit,
-            $xmlClient->rateLimitStatus->hourlyLimit
+            $clientAndUser->rateLimitStatus->remainingHits,
+            $client->rateLimitStatus->remainingHits,
+            $clientAndUser->rateLimitStatus->resetTime,
+            $client->rateLimitStatus->resetTime,
+            $clientAndUser->rateLimitStatus->hourlyLimit,
+            $client->rateLimitStatus->hourlyLimit
         );
     }
 
@@ -2319,77 +1294,20 @@ class Api
      */
     public function customCall($url, $parameters, $method, $userHeaders = array())
     {
-        $headers = $this->getHeaders();
-        $headers = array_merge($headers, $userHeaders);
-
-        try {
-            $this->oauth->fetch($this->baseApiUrl . $url, $parameters, $method, $headers);
-        } catch (\Exception $E) {
-        }
-        $response = $this->oauth->getLastResponse();
-        $responseInfo = $this->oauth->getLastResponseInfo();
-        return new Response($response, $responseInfo['http_code']);
+        $response = $this->service->request($url, $method, $parameters, $userHeaders);
+        return $this->parseResponse($response);
     }
 
-
-    /**
-     * Make custom call to any API endpoint, signed with consumer_key only (on behalf of CLIENT)
-     *
-     * @param string $url Endpoint url after '.../1/'
-     * @param array $parameters Request parameters
-     * @param string $method (OAUTH_HTTP_METHOD_GET, OAUTH_HTTP_METHOD_POST, OAUTH_HTTP_METHOD_PUT, OAUTH_HTTP_METHOD_DELETE)
-     * @param array $userHeaders Additional custom headers
-     * @return Response
-     */
-    public function client_customCall($url, $parameters, $method, $userHeaders = array())
-    {
-        $OAuthConsumer = new OAuth($this->consumer_key, $this->consumer_secret, OAUTH_SIG_METHOD_HMACSHA1, OAUTH_AUTH_TYPE_AUTHORIZATION);
-
-        if ($debug)
-            $OAuthConsumer->enableDebug();
-
-        $headers = $this->getHeaders();
-        $headers = array_merge($headers, $userHeaders);
-
-        try {
-            $OAuthConsumer->fetch($this->baseApiUrl . $url, $parameters, $method, $headers);
-        } catch (\Exception $E) {
-        }
-        $response = $OAuthConsumer->getLastResponse();
-        $responseInfo = $OAuthConsumer->getLastResponseInfo();
-        $this->clientDebug = print_r($OAuthConsumer->debugInfo, true);
-        return new Response($response, $responseInfo['http_code']);
-    }
-
-
-    /**
-     * @return array
-     */
-    private function getHeaders()
-    {
-        $headers = array();
-        $headers['User-Agent'] = $this->userAgent;
-
-        if ($this->metric == 1) {
-            $headers['Accept-Language'] = 'en_US';
-        } else if ($this->metric == 2) {
-            $headers['Accept-Language'] = 'en_GB';
-        }
-
-        return $headers;
-    }
-    
-    
     /**
      * @return mixed SimpleXMLElement or the value encoded in json as an object
      */
     private function parseResponse($response)
     {
         if ($this->responseFormat == 'xml')
-            $response = (isset($response->errors)) ? $response->errors->apiError : simplexml_load_string($response);
+            return simplexml_load_string($response);
         else if ($this->responseFormat == 'json')
-            $response = (isset($response->errors)) ? $response->errors : json_decode($response);
+            return json_decode($response);
 
         return $response;
     }
-} 
+}

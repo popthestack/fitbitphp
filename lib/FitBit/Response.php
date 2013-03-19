@@ -3,9 +3,9 @@
  * Basic response wrapper for customCall
  *
  */
- 
-namespace FitBit;
- 
+
+namespace Fitbit;
+
 class Response
 {
     public $response;

@@ -1,10 +1,10 @@
-<?php  
+<?php
 /**
  * Wrapper for rate limiting quota
  *
  */
- 
-namespace FitBit;
+
+namespace Fitbit;
 
 class RateLimiting
 {
@@ -23,5 +23,5 @@ class RateLimiting
         $this->client = $client;
         $this->clientReset = $clientReset;
         $this->clientQuota = $clientQuota;
-    }  
-}       
+    }
+}
