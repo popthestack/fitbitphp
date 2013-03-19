@@ -14,7 +14,7 @@
  */
 namespace FitBit;
 
-class FitBit
+class Api
 {
 
     /**
