@@ -13,5 +13,11 @@
         "psr-0": {
             "Fitbit": "lib/"
         }
-    }
+    },
+    "repositories": [
+        {
+            "type": "vcs",
+            "url": "https://github.com/TheSavior/PHPoAuthLib"
+        }
+    ]
 }

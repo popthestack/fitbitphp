@@ -1,25 +1,25 @@
 {
-    "hash": "22f71cf5394401e4a2683f2b4f57c3e2",
+    "hash": "2197f9e6feb8a3daad78dc2d1bd5a129",
     "packages": [
         {
             "name": "lusitanian/oauth",
             "version": "dev-master",
             "source": {
                 "type": "git",
-                "url": "https://github.com/Lusitanian/PHPoAuthLib.git",
-                "reference": "225ba03f0df085e2d285cc5e47f777a09c9c4297"
+                "url": "https://github.com/TheSavior/PHPoAuthLib.git",
+                "reference": "45dd1fcbae43ae9095125f44fe604916329a4ea5"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/Lusitanian/PHPoAuthLib/zipball/225ba03f0df085e2d285cc5e47f777a09c9c4297",
-                "reference": "225ba03f0df085e2d285cc5e47f777a09c9c4297",
+                "url": "https://api.github.com/repos/TheSavior/PHPoAuthLib/zipball/45dd1fcbae43ae9095125f44fe604916329a4ea5",
+                "reference": "45dd1fcbae43ae9095125f44fe604916329a4ea5",
                 "shasum": ""
             },
             "require": {
                 "php": ">=5.4.0"
             },
             "require-dev": {
-                "symfony/http-foundation": ">=2.1,<3.0"
+                "symfony/http-foundation": "~2.1"
             },
             "type": "library",
             "extra": {
@@ -32,7 +32,6 @@
                     "OAuth": "src"
                 }
             },
-            "notification-url": "https://packagist.org/downloads/",
             "license": [
                 "MIT"
             ],
@@ -48,12 +47,15 @@
             ],
             "description": "PHP 5.4+ oAuth 1/2 Library",
             "keywords": [
-                "Authentication",
+                "authentication",
                 "authorization",
                 "oauth",
                 "security"
             ],
-            "time": "2013-03-07 04:42:29"
+            "support": {
+                "source": "https://github.com/TheSavior/PHPoAuthLib/tree/master"
+            },
+            "time": "2013-03-19 03:32:37"
         }
     ],
     "packages-dev": [
