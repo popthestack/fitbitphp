@@ -1,10 +1,11 @@
 {
-    "name": "thesavior/fitbitphp",
+    "name": "thesavior/fitbit",
     "version": "0.5",
     "type": "library",
     "description": "Fitbit library with OAuth",
     "keywords": ["fitbit"],
     "homepage": "https://github.com/thesavior/fitbitphp",
+    "license" : "Apache-2.0",
     "require": {
         "php": ">=5.4",
         "lusitanian/oauth" : "dev-master"
