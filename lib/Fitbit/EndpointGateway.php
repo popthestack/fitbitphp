@@ -71,9 +71,14 @@ class EndpointGateway {
     protected function makeApiRequest($resource, $method = 'GET', $body = array(), $extraHeaders = array())
     {
         $path = $resource . '.' . $this->responseFormat;
-        
+
+        if ($method == 'GET' && $body) {
+            $path .= '?' . http_build_query($body);
+            $body = array();
+        }
+
         $response = $this->service->request($path, $method, $body, $extraHeaders);
-        
+
         return $this->parseResponse($response);
     }
 

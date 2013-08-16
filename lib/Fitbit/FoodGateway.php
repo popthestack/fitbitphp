@@ -157,7 +157,7 @@ class FoodGateway extends EndpointGateway {
      */
     public function searchFoods($query)
     {
-        return $this->makeApiRequest('foods/search?query=' . rawurlencode($query));
+        return $this->makeApiRequest('foods/search', 'GET', array('query' => $query));
     }
 
     /**
