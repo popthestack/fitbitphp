@@ -16,12 +16,29 @@ You need a consumer key and secret. You can obtain them by registering an applic
 
 Simple, but full OAuth workflow example:
 
+**Note:** there's currently a bug in the OAuth library I'm using that keeps this example from working normally. I've added a workaround. ([see pull request that'll fix the problem](https://github.com/Lusitanian/PHPoAuthLib/pull/81)).
+
 ```php
 $factory = new \Fitbit\ApiGatewayFactory;
 $factory->setCallbackURL($callback_url);
 $factory->setCredentials($consumer_key, $consumer_secret);
 
-$adapter = new \OAuth\Common\Storage\Session();
+// workaround for bug in \OAuth\Common\Storage\Session
+session_start();
+$session_data = null;
+if (isset($_SESSION['lusitanian_oauth_token'])) {
+    $session_data = $_SESSION['lusitanian_oauth_token'];
+}
+// end workaround
+
+$adapter = new \OAuth\Common\Storage\Session(false, 'lusitanian_oauth_token');
+
+// workaround for bug in \OAuth\Common\Storage\Session
+if ($session_data) {
+    $_SESSION['lusitanian_oauth_token'] = $session_data;;
+}
+// end workaround
+
 $factory->setStorageAdapter($adapter);
 
 $auth_gateway = $factory->getAuthenticationGateway();
