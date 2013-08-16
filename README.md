@@ -1,49 +1,87 @@
 ## FitbitPHP ##
 
-Basic wrapper for OAuth-based [FitBit](http://fitbit.com) [REST API](http://dev.fitbit.com). Seek more information on API developments at [dev.fitbit.com](http://dev.fitbit.com). This library does **NOT** require the OAuth extension to be installed in PHP. This should work on any server with php >= 5.4.
+Basic wrapper for the OAuth-based [FitBit](http://fitbit.com) [REST API](http://dev.fitbit.com). See [dev.fitbit.com](http://dev.fitbit.com) for details on their OAuth implementation.
 
-Library is in BETA as well as the API, so it could still be buggy. We're looking forward to update the library as API moves forward, doing best not to break backward compatibility. That being said, feel free to fork, add features and send pull request to us if you need more awesomness right now, we'll be happy to include them if well done.
+Both this library and the Fitbit API are in **beta**.
 
-**Current notes:**
-
- * *Subscriptions*: Library has basic methods to add/delete subscriptions, unfortunately it's your headache to track the list and deploy server endpoints to receive notifications from Fitbit as well as register them at [http://dev.fitbit.com](http://dev.fitbit.com). See [Subscriptions-API](http://wiki.fitbit.com/display/API/Subscriptions-API) for more thoughts on that,
- * *Unauthenticated calls*: Some methods of Fitbit API grant access to public resources without need for the complete OAuth workflow, `searchFoods` and `getActivities` are two good example of such endpoints. Nevertheless, this calls should be signed with Authentication header as usual, but access_token parameter is omitted from signature base string. In terms of FitbitPHP, you can make such calls, but you shouldn't use `initSession` (so access_token wouldn't be set) and should explicitly set the user to fetch resources from before the call (via `setUser`).
+This library does not require the PHP OAuth extension. It should work on any server with PHP >= 5.3.
 
 ## Installation ##
 This package is installable with composer:
-    "thesavior/fitbit": "dev-master"
+    "popthestack/fitbit": "dev-master"
 
 ## Usage ##
 
-First, as always don't forget to register your application at http://dev.fitbit.com and obtain consumer key and secret for your application.
+You need a consumer key and secret. You can obtain them by registering an application at [http://dev.fitbit.com](http://dev.fitbit.com).
 
-Library itself handles whole OAuth application authorization workflow for you as well as session tracking between page views. This could be used further to provide 'Sign with Fitbit' like feature (look at next code sample) or just to authorize application to act with FitBit API on user's behalf.
-
-Example snippet on frontend could look like:
+Simple, but full OAuth workflow example:
 
     <?php
-    $fitbit = new \Fitbit\Api($_SERVER["clientid", "clientsecret");
+    $factory = new \Fitbit\ApiGatewayFactory;
+    $factory->setCallbackURL($callback_url);
+    $factory->setCredentials($consumer_key, $consumer_secret);
+    
+    $adapter = new \OAuth\Common\Storage\Session();
+    $factory->setStorageAdapter($adapter);
+    
+    $auth_gateway = $factory->getAuthenticationGateway();
+    
+    if (isset($_GET['oauth_token']) && isset($_GET['oauth_verifier'])) {
+        $auth_gateway->authenticateUser($_GET['oauth_token'], $_GET['oauth_verifier']);
+    } elseif (isset($_GET['connect'])) {
+        $auth_gateway->initiateLogin();
+    }
+    
+    if ($auth_gateway->isAuthorized()) {
+        $user_gateway = $factory->getUserGateway();
+        $user_profile = $user_gateway->getProfile();
+        echo '<pre>';
+        print_r($user_profile);
+        echo '</pre>';
+    } else {
+        echo 'Not connected.';
+    }
 
-    $fitbit->initSession();
-    $json = $fitbit->getProfile();
+If you want to retrieve the OAuth token and secret from the session to store elsewhere (e.g. a database):
 
-    print_r($json);
+    <?php
+    $storage = $factory->getStorageAdapter();
+    $token   = $storage->retrieveAccessToken('FitBit');
+    
+    // Save these somewhere:
+    $oauth_token  = $token->getRequestToken();
+    $oauth_secret = $token->getRequestTokenSecret();
 
-Note, that unconditional call to 'initSession' in each page will completely hide them from the eyes of unauthorized visitor. Don't be amazed, however, it's not a right way to make area private on your site. On the other hand, you could just track if user already authorized access to FitBit without any additional workflow, if it was not true:
+Here's how to use your OAuth token and secret without the `Session` storage adapter.
+It's a little cumbersome, but it works. If I ever have time for it, I'd like to
+replace the current OAuth library with something that doesn't enforce so much... stuff.
 
-    if($fitbit->isAuthorized())
-        <you_are_authorized_user_yes_you_are>
+    <?php
+    $token = new \OAuth\OAuth1\Token\StdOAuth1Token();
+    $token->setRequestToken($oauth_token);
+    $token->setRequestTokenSecret($oauth_secret);
+    $token->setAccessToken($oauth_token);
+    $token->setAccessTokenSecret($oauth_secret);
+    
+    $adapter = new \OAuth\Common\Storage\Memory();
+    $adapter->storeAccessToken('FitBit', $token);
+    
+    $factory->setStorageAdapter($adapter);
+    
+    $user_gateway = $factory->getUserGateway();
+    $food_gateway = $factory->getFoodGateway();
+    
+    $user_profile = $user_gateway->getProfile();
+    $user_devices = $user_gateway->getDevices();
+    $foods        = $food_gateway->searchFoods('banana split');
+    
+    echo '<pre>';
+    print_r($user_profile);
+    print_r($user_devices);
+    print_r($foods);
+    echo '</pre>';
 
+## Notes ##
 
-**Note.** By default, all requests are made to work with resources of authorized user (viewer), however you can use `setUser` method to set another user, this would work only for several endpoints, which grant access to resources of other users and only if that user granted permissions to access his data ("Friends" or "Anyone").
-
-If you want to fetch data without complete OAuth workflow, only using consumer_key without access_token, you can do that also (check which endpoints are okey with such calls on Fitbit API documentation):
-
-    require 'fitbitphp.php';
-
-    $fitbit = new \Fitbit\Api(FITBIT_KEY, FITBIT_SECRET);
-
-    $fitbit->setUser('XXXXXX');
-    $json = $fitbit->getProfile();
-
-    print_r($json);
+ * By default, all requests assume you want data for the authorized user (viewer). There are, however, several endpoints you can use to access the data of other Fitbit users, given that you have permission to access their data. This is accomplished by setting the Fitbit User ID with the `setUserID` method available on `ApiGatewayFactory` and the Endpoint Gateways (e.g. `UserGateway`, `FoodGateway`).
+ * *Subscriptions*: this library has some basic methods to add/delete subscriptions, but it's your responsibility to track the list and maintain server endpoints to receive notifications from Fitbit, as well as register them at [http://dev.fitbit.com](http://dev.fitbit.com). See [Subscriptions-API](http://wiki.fitbit.com/display/API/Subscriptions-API) for more information.
