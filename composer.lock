@@ -11,12 +11,12 @@
             "source": {
                 "type": "git",
                 "url": "https://github.com/Lusitanian/PHPoAuthLib.git",
-                "reference": "364b76d8cfce64bd9b1c6223474257cc9eba7356"
+                "reference": "c982a09656a8bacd2e4a1266dabd52ab552ea2af"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/Lusitanian/PHPoAuthLib/zipball/364b76d8cfce64bd9b1c6223474257cc9eba7356",
-                "reference": "364b76d8cfce64bd9b1c6223474257cc9eba7356",
+                "url": "https://api.github.com/repos/Lusitanian/PHPoAuthLib/zipball/c982a09656a8bacd2e4a1266dabd52ab552ea2af",
+                "reference": "c982a09656a8bacd2e4a1266dabd52ab552ea2af",
                 "shasum": ""
             },
             "require": {
@@ -64,7 +64,7 @@
                 "oauth",
                 "security"
             ],
-            "time": "2013-08-16 14:44:25"
+            "time": "2013-08-19 16:37:43"
         }
     ],
     "packages-dev": [
