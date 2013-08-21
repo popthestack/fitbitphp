@@ -5,6 +5,19 @@ namespace Fitbit;
 class UserGateway extends EndpointGateway {
 
     /**
+     * Valid subscription types mapped to their collection paths.
+     * @var array
+     */
+    protected $subscriptionTypes = [
+        'sleep'      => '/sleep',
+        'body'       => '/body',
+        'activities' => '/activities',
+        'foods'      => '/foods',
+        'all'        => '',
+        ''           => '',
+    ];
+
+    /**
      * API wrappers
      *
      */
@@ -130,54 +143,104 @@ class UserGateway extends EndpointGateway {
     /**
      * Add subscription
      *
-     * @throws Exception
-     * @param string $id Subscription Id
-     * @param string $path Subscription resource path (beginning with slash). Omit to subscribe to all user updates.
-     * @return
+     * @access public
+     * @param string $id Subscription ID
+     * @param string $subscriptionType Collection type
+     * @param string $subscriberId The ID of the subscriber
+     * @return mixed
      */
-    public function addSubscription($id, $path = null, $subscriberId = null)
+    public function addSubscription($id, $subscriptionType = 'all', $subscriberId = null)
     {
-        $extraHeaders = array();
-        if ($subscriberId) {
-            $extraHeaders['X-Fitbit-Subscriber-Id'] = $subscriberId;
-        }
-
-        if (isset($path)) {
-            $path = '/' . $path;
-        } else {
-            $path = '';
-        }
-
-        return $this->makeApiRequest('user/-' . $path . '/apiSubscriptions/' . $id, 'POST', $parameters, $extraHeaders);
+        return $this->makeApiRequest(
+            $this->makeSubscriptionUrl($id, $subscriptionType),
+            'POST',
+            array(),
+            $this->makeSubscriptionHeaders($subscriberId)
+        );
     }
 
     /**
      * Delete user subscription
      *
-     * @throws Exception
+     * @access public
      * @param string $id Subscription Id
-     * @param string $path Subscription resource path (beginning with slash)
+     * @param string $subscriptionType Collection type
+     * @param string $subscriberId The ID of the subscriber
      * @return bool
      */
-    public function deleteSubscription($id, $path = null)
+    public function deleteSubscription($id, $subscriptionType = 'all', $subscriberId = null)
     {
-        if (isset($path)) {
-            $path = '/' . $path;
-        } else {
-            $path = '';
-        }
+        return $this->makeApiRequest(
+            $this->makeSubscriptionUrl($id, $subscriptionType),
+            'DELETE',
+            array(),
+            $this->makeSubscriptionHeaders($subscriberId)
+        );
+    }
 
-        return $this->makeApiRequest('user/-' . $path . '/apiSubscriptions/' . $id, 'DELETE');
+    /**
+     * Validate user subscription type
+     *
+     * @throws Exception
+     * @access protected
+     * @param string &$subscriptionType Collection type
+     * @return bool
+     */
+    protected function validateSubscriptionType(&$subscriptionType)
+    {
+        if (isset($this->subscriptionTypes[$subscriptionType])) {
+            $subscriptionType = $this->subscriptionTypes[$subscriptionType];
+        } else {
+            throw new Exception(sprintf('Invalid subscription collection type (valid values are \'%s\')',
+                implode("', '", array_keys($this->subscriptionTypes))
+            ));
+        }
+        return true;
+    }
+
+    /**
+     * Create headers for subscription requests.
+     *
+     * @access protected
+     * @param string $subscriberId The ID of the subscriber
+     * @return array
+     */
+    protected function makeSubscriptionHeaders($subscriberId = null)
+    {
+        $headers = array();
+        if ($subscriberId) {
+            $headers['X-Fitbit-Subscriber-Id'] = $subscriberId;
+        }
+        return $headers;
+    }
+
+    /**
+     * Create the subscription request URL
+     *
+     * @access protected
+     * @param string $id Subscription Id
+     * @param string $subscriptionType subscriptionType resource path
+     * @return string
+     */
+    protected function makeSubscriptionUrl($id, $subscriptionType)
+    {
+        $this->validateSubscriptionType($subscriptionType);
+        
+        return sprintf('user/%s%s/apiSubscriptions%s',
+            $this->userID,
+            $subscriptionType,
+            ($id ? '/' . $id : '')
+        );
     }
 
     /**
      * Get list of user's subscriptions for this application
      *
-     * @throws Exception
-     * @return
+     * @access public
+     * @return mixed
      */
     public function getSubscriptions()
     {
-        return $this->makeApiRequest('user/-/apiSubscriptions');
+        return $this->makeApiRequest($this->makeSubscriptionUrl(null, null));
     }
 }
