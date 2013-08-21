@@ -63,7 +63,7 @@ class EndpointGateway {
      *
      * @access protected
      * @param string $resource Endpoint after '.../1/'
-     * @param string $method (OAUTH_HTTP_METHOD_GET, OAUTH_HTTP_METHOD_POST, OAUTH_HTTP_METHOD_PUT, OAUTH_HTTP_METHOD_DELETE)
+     * @param string $method ('GET', 'POST', 'PUT', 'DELETE')
      * @param array $body Request parameters
      * @param array $extraHeaders Additional custom headers
      * @return mixed stdClass for json response, SimpleXMLElement for XML response.
