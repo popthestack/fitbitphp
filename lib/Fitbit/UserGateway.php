@@ -27,9 +27,20 @@ class UserGateway extends EndpointGateway {
     }
 
     /**
+     * Update user profile with array of parameters.
+     *
+     * @access public
+     * @param array $parameters
+     * @return mixed SimpleXMLElement or the value encoded in json as an object
+     */
+    public function updateProfileFromArray($parameters) {
+        return $this->makeApiRequest('user/' . $this->userID . '/profile', 'POST', $parameters);
+    }
+
+    /**
      * Update user profile
      *
-     * @throws Exception
+     * @access public
      * @param string $gender 'FEMALE', 'MALE' or 'NA'
      * @param DateTime $birthday Date of birth
      * @param string $height Height in cm/inches (as set with setMetric)
@@ -38,23 +49,29 @@ class UserGateway extends EndpointGateway {
      * @param string $timezone Timezone in the format 'America/Los_Angeles'
      * @return mixed SimpleXMLElement or the value encoded in json as an object
      */
-    public function updateProfile($gender = null, $birthday = null, $height = null, $nickname = null, $fullName = null, $timezone = null)
+    public function updateProfile($gender = null, DateTime $birthday = null, $height = null, $nickname = null, $fullName = null, $timezone = null)
     {
         $parameters = array();
-        if (isset($gender))
+        if ($gender) {
             $parameters['gender'] = $gender;
-        if (isset($birthday))
+        }
+        if ($birthday) {
             $parameters['birthday'] = $birthday->format('Y-m-d');
-        if (isset($height))
+        }
+        if ($height) {
             $parameters['height'] = $height;
-        if (isset($nickname))
+        }
+        if ($nickname) {
             $parameters['nickname'] = $nickname;
-        if (isset($fullName))
+        }
+        if ($fullName) {
             $parameters['fullName'] = $fullName;
-        if (isset($timezone))
+        }
+        if ($timezone) {
             $parameters['timezone'] = $timezone;
+        }
 
-        return $this->makeApiRequest('user/' . $this->userID . '/profile', 'POST', $parameters);
+        return $this->updateProfileFromArray($parameters);
     }
 
     /**
