@@ -30,7 +30,7 @@ class WaterGateway extends EndpointGateway {
      * @param string $waterUnit Water Unit ("ml", "fl oz" or "cup")
      * @return mixed SimpleXMLElement or the value encoded in json as an object
      */
-    public function logWater($date, $amount, $waterUnit = null)
+    public function logWater(DateTime $date, $amount, $waterUnit = null)
     {
         $waterUnits = array('ml', 'fl oz', 'cup');
 

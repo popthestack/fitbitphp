@@ -29,7 +29,7 @@ class SleepGateway extends EndpointGateway {
      * @param string $duration Duration millis
      * @return mixed SimpleXMLElement or the value encoded in json as an object
      */
-    public function logSleep($date, $duration)
+    public function logSleep(DateTime $date, $duration)
     {
         $parameters = array();
         $parameters['date'] = $date->format('Y-m-d');

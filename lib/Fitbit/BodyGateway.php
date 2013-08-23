@@ -7,7 +7,7 @@ class BodyGateway extends EndpointGateway {
     /**
      * Get user body measurements
      *
-     * @throws Exception
+     * @access public
      * @param  DateTime $date
      * @param  String $dateStr
      * @return mixed SimpleXMLElement or the value encoded in json as an object
@@ -24,7 +24,8 @@ class BodyGateway extends EndpointGateway {
     /**
      * Log user body measurements
      *
-     * @throws Exception
+     * @access public
+     * @param DateTime $date Date Log entry date (set proper timezone, which could be fetched via getProfile)
      * @param string $weight Float number. For en_GB units, provide floating number of stones (i.e. 11 st. 4 lbs = 11.2857143)
      * @param string $fat Float number
      * @param string $bicep Float number
@@ -35,11 +36,9 @@ class BodyGateway extends EndpointGateway {
      * @param string $neck Float number
      * @param string $thigh Float number
      * @param string $waist Float number
-     * @param DateTime $date Date Log entry date (set proper timezone, which could be fetched via getProfile)
      * @return mixed SimpleXMLElement or the value encoded in json as an object
      */
-
-    public function logBody($date, $weight = null, $fat = null, $bicep = null, $calf = null, $chest = null, $forearm = null, $hips = null, $neck = null, $thigh = null, $waist = null)
+    public function logBody(DateTime $date, $weight = null, $fat = null, $bicep = null, $calf = null, $chest = null, $forearm = null, $hips = null, $neck = null, $thigh = null, $waist = null)
     {
         $parameters = array();
         $parameters['date'] = $date->format('Y-m-d');
@@ -76,12 +75,13 @@ class BodyGateway extends EndpointGateway {
      * @param DateTime $date If present, log entry date, now by default (set proper timezone, which could be fetched via getProfile)
      * @return bool
      */
-    public function logWeight($weight, $date = null)
+    public function logWeight($weight, DateTime $date = null)
     {
         $parameters = array();
         $parameters['weight'] = $weight;
-        if (isset($date))
+        if ($date) {
             $parameters['date'] = $date->format('Y-m-d');
+        }
 
         return $this->makeApiRequest('user/-/body/weight', 'POST', $parameters);
     }
@@ -94,7 +94,7 @@ class BodyGateway extends EndpointGateway {
      * @param  String $dateStr
      * @return mixed SimpleXMLElement or the value encoded in json as an object
      */
-    public function getBloodPressure($date, $dateStr)
+    public function getBloodPressure($date, $dateStr = null)
     {
         if (!isset($dateStr)) {
             $dateStr = $date->format('Y-m-d');
@@ -113,14 +113,15 @@ class BodyGateway extends EndpointGateway {
      * @param DateTime $time Time of the measurement (set proper timezone, which could be fetched via getProfile)
      * @return mixed SimpleXMLElement or the value encoded in json as an object
      */
-    public function logBloodPressure($date, $systolic, $diastolic, $time = null)
+    public function logBloodPressure(DateTime $date, $systolic, $diastolic, DateTime $time = null)
     {
         $parameters = array();
         $parameters['date'] = $date->format('Y-m-d');
         $parameters['systolic'] = $systolic;
         $parameters['diastolic'] = $diastolic;
-        if (isset($time))
+        if ($time) {
             $parameters['time'] = $time->format('H:i');
+        }
 
         return $this->makeApiRequest('user/-/bp', 'POST', $parameters);
     }
@@ -145,7 +146,7 @@ class BodyGateway extends EndpointGateway {
      * @param  String $dateStr
      * @return mixed SimpleXMLElement or the value encoded in json as an object
      */
-    public function getGlucose($date, $dateStr)
+    public function getGlucose($date, $dateStr = null)
     {
         if (!isset($dateStr)) {
             $dateStr = $date->format('Y-m-d');
@@ -165,16 +166,18 @@ class BodyGateway extends EndpointGateway {
      * @param DateTime $time Time of the measurement (set proper timezone, which could be fetched via getProfile)
      * @return mixed SimpleXMLElement or the value encoded in json as an object
      */
-    public function logGlucose($date, $tracker, $glucose, $hba1c = null, $time = null)
+    public function logGlucose(DateTime $date, $tracker, $glucose, $hba1c = null, DateTime $time = null)
     {
         $parameters = array();
         $parameters['date'] = $date->format('Y-m-d');
         $parameters['tracker'] = $tracker;
         $parameters['glucose'] = $glucose;
-        if (isset($hba1c))
+        if ($hba1c) {
             $parameters['hba1c'] = $hba1c;
-        if (isset($time))
+        }
+        if ($time) {
             $parameters['time'] = $time->format('H:i');
+        }
 
         return $this->makeApiRequest('user/-/glucose', 'POST', $parameters);
     }
@@ -206,14 +209,15 @@ class BodyGateway extends EndpointGateway {
      * @param DateTime $time Time of the measurement (set proper timezone, which could be fetched via getProfile)
      * @return mixed SimpleXMLElement or the value encoded in json as an object
      */
-    public function logHeartRate($date, $tracker, $heartRate, $time = null)
+    public function logHeartRate(DateTime $date, $tracker, $heartRate, DateTime $time = null)
     {
         $parameters = array();
         $parameters['date'] = $date->format('Y-m-d');
         $parameters['tracker'] = $tracker;
         $parameters['heartRate'] = $heartRate;
-        if (isset($time))
+        if ($time) {
             $parameters['time'] = $time->format('H:i');
+        }
 
         return $this->makeApiRequest('user/-/heart', 'POST', $parameters);
     }

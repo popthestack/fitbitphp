@@ -66,7 +66,7 @@ class FoodGateway extends EndpointGateway {
      * @param string $amount Amount in specified units
      * @return mixed SimpleXMLElement or the value encoded in json as an object
      */
-    public function logFood($date, $foodId, $mealTypeId, $unitId, $amount, $foodName = null, $calories = null, $brandName = null, $nutrition = null)
+    public function logFood(DateTime $date, $foodId, $mealTypeId, $unitId, $amount, $foodName = null, $calories = null, $brandName = null, $nutrition = null)
     {
         $parameters = array();
         $parameters['date'] = $date->format('Y-m-d');
