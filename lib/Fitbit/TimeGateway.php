@@ -132,10 +132,10 @@ class TimeGateway extends EndpointGateway {
                 return false;
         }
 
-        return $this->makeApiRequest(sprintf('user/%s/date/%s/%s'),
+        return $this->makeApiRequest(sprintf('user/%s/date/%s/%s',
             $this->userID . $path,
             (is_string($basedate) ? $basedate : $basedate->format('Y-m-d')),
-            (is_string($to_period) ? $to_period : $to_period->format('Y-m-d'))
+            (is_string($to_period) ? $to_period : $to_period->format('Y-m-d')))
         );
     }
 
@@ -172,10 +172,10 @@ class TimeGateway extends EndpointGateway {
                 return false;
         }
 
-        return $this->makeApiRequest(sprintf('user/-%s/date/%s/1d%s'),
+        return $this->makeApiRequest(sprintf('user/-%s/date/%s/1d%s',
             $path,
             (is_string($date) ? $date : $date->format('Y-m-d')),
-            ((!empty($start_time) && !empty($end_time)) ? '/time/' . $start_time->format('H:i') . '/' . $end_time->format('H:i') : '')
+            ((!empty($start_time) && !empty($end_time)) ? '/time/' . $start_time->format('H:i') . '/' . $end_time->format('H:i') : ''))
         );
     }
 }
