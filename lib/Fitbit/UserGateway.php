@@ -8,14 +8,14 @@ class UserGateway extends EndpointGateway {
      * Valid subscription types mapped to their collection paths.
      * @var array
      */
-    protected $subscriptionTypes = [
+    protected $subscriptionTypes = array(
         'sleep'      => '/sleep',
         'body'       => '/body',
         'activities' => '/activities',
         'foods'      => '/foods',
         'all'        => '',
         ''           => '',
-    ];
+    );
 
     /**
      * API wrappers
