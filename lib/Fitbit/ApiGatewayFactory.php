@@ -55,6 +55,11 @@ class ApiGatewayFactory
     protected $callbackURL;
 
     /**
+     * @var \OAuth\Common\Http\Client\ClientInterface
+     */
+    protected $httpClient;
+
+    /**
      * Set consumer credentials
      * 
      * @access public
@@ -133,6 +138,18 @@ class ApiGatewayFactory
     public function setUserID($id)
     {
         $this->userID = $id;
+        return $this;
+    }
+
+    /**
+     * Set HTTP Client library for Fitbit service.
+     *
+     * @param  \OAuth\Common\Http\Client\ClientInterface $client
+     * @return \Fitbit\ApiGatewayFactory
+     */
+    public function setHttpClient(\OAuth\Common\Http\Client\ClientInterface $client)
+    {
+        $this->httpClient = $client;
         return $this;
     }
 
@@ -229,6 +246,11 @@ class ApiGatewayFactory
             );
 
             $factory = new ServiceFactory();
+
+            if ($this->httpClient) {
+                $factory->setHttpClient($this->httpClient);
+            }
+
             $this->service = $factory->createService('FitBit', $credentials, $this->storageAdapter);
         }
 
