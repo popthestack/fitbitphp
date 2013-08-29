@@ -42,14 +42,14 @@ class UserGateway extends EndpointGateway {
      *
      * @access public
      * @param string $gender 'FEMALE', 'MALE' or 'NA'
-     * @param DateTime $birthday Date of birth
+     * @param \DateTime $birthday Date of birth
      * @param string $height Height in cm/inches (as set with setMetric)
      * @param string $nickname Nickname
      * @param string $fullName Full name
      * @param string $timezone Timezone in the format 'America/Los_Angeles'
      * @return mixed SimpleXMLElement or the value encoded in json as an object
      */
-    public function updateProfile($gender = null, DateTime $birthday = null, $height = null, $nickname = null, $fullName = null, $timezone = null)
+    public function updateProfile($gender = null, \DateTime $birthday = null, $height = null, $nickname = null, $fullName = null, $timezone = null)
     {
         $parameters = array();
         if ($gender) {

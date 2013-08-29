@@ -8,7 +8,7 @@ class SleepGateway extends EndpointGateway {
      * Get user sleep log entries for specific date
      *
      * @throws Exception
-     * @param  DateTime $date
+     * @param  \DateTime $date
      * @param  String $dateStr
      * @return mixed SimpleXMLElement or the value encoded in json as an object
      */
@@ -25,11 +25,11 @@ class SleepGateway extends EndpointGateway {
      * Log user sleep
      *
      * @throws Exception
-     * @param DateTime $date Sleep date and time (set proper timezone, which could be fetched via getProfile)
+     * @param \DateTime $date Sleep date and time (set proper timezone, which could be fetched via getProfile)
      * @param string $duration Duration millis
      * @return mixed SimpleXMLElement or the value encoded in json as an object
      */
-    public function logSleep(DateTime $date, $duration)
+    public function logSleep(\DateTime $date, $duration)
     {
         $parameters = array();
         $parameters['date'] = $date->format('Y-m-d');

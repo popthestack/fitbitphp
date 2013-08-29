@@ -24,8 +24,8 @@ class TimeGateway extends EndpointGateway {
      *
      * @throws Exception
      * @param string $type
-     * @param  $basedate DateTime or 'today', to_period
-     * @param  $to_period DateTime or '1d, 7d, 30d, 1w, 1m, 3m, 6m, 1y, max'
+     * @param  $basedate \DateTime or 'today', to_period
+     * @param  $to_period \DateTime or '1d, 7d, 30d, 1w, 1m, 3m, 6m, 1y, max'
      * @return array
      */
     public function getTimeSeries($type, $basedate, $to_period)
@@ -147,9 +147,9 @@ class TimeGateway extends EndpointGateway {
      *
      * @throws Exception
      * @param string $type
-     * @param  $date DateTime or 'today'
-     * @param  $start_time DateTime
-     * @param  $end_time DateTime
+     * @param  $date \DateTime or 'today'
+     * @param  $start_time \DateTime
+     * @param  $end_time \DateTime
      * @return object
      */
     public function getIntradayTimeSeries($type, $date, $start_time = null, $end_time = null)

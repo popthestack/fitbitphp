@@ -8,7 +8,7 @@ class BodyGateway extends EndpointGateway {
      * Get user body measurements
      *
      * @access public
-     * @param  DateTime $date
+     * @param  \DateTime $date
      * @param  String $dateStr
      * @return mixed SimpleXMLElement or the value encoded in json as an object
      */
@@ -25,7 +25,7 @@ class BodyGateway extends EndpointGateway {
      * Log user body measurements
      *
      * @access public
-     * @param DateTime $date Date Log entry date (set proper timezone, which could be fetched via getProfile)
+     * @param \DateTime $date Date Log entry date (set proper timezone, which could be fetched via getProfile)
      * @param string $weight Float number. For en_GB units, provide floating number of stones (i.e. 11 st. 4 lbs = 11.2857143)
      * @param string $fat Float number
      * @param string $bicep Float number
@@ -38,7 +38,7 @@ class BodyGateway extends EndpointGateway {
      * @param string $waist Float number
      * @return mixed SimpleXMLElement or the value encoded in json as an object
      */
-    public function logBody(DateTime $date, $weight = null, $fat = null, $bicep = null, $calf = null, $chest = null, $forearm = null, $hips = null, $neck = null, $thigh = null, $waist = null)
+    public function logBody(\DateTime $date, $weight = null, $fat = null, $bicep = null, $calf = null, $chest = null, $forearm = null, $hips = null, $neck = null, $thigh = null, $waist = null)
     {
         $parameters = array();
         $parameters['date'] = $date->format('Y-m-d');
@@ -72,10 +72,10 @@ class BodyGateway extends EndpointGateway {
      *
      * @throws Exception
      * @param string $weight Float number. For en_GB units, provide floating number of stones (i.e. 11 st. 4 lbs = 11.2857143)
-     * @param DateTime $date If present, log entry date, now by default (set proper timezone, which could be fetched via getProfile)
+     * @param \DateTime $date If present, log entry date, now by default (set proper timezone, which could be fetched via getProfile)
      * @return bool
      */
-    public function logWeight($weight, DateTime $date = null)
+    public function logWeight($weight, \DateTime $date = null)
     {
         $parameters = array();
         $parameters['weight'] = $weight;
@@ -90,7 +90,7 @@ class BodyGateway extends EndpointGateway {
      * Get user blood pressure log entries for specific date
      *
      * @throws Exception
-     * @param  DateTime $date
+     * @param  \DateTime $date
      * @param  String $dateStr
      * @return mixed SimpleXMLElement or the value encoded in json as an object
      */
@@ -107,13 +107,13 @@ class BodyGateway extends EndpointGateway {
      * Log user blood pressure
      *
      * @throws Exception
-     * @param DateTime $date Log entry date (set proper timezone, which could be fetched via getProfile)
+     * @param \DateTime $date Log entry date (set proper timezone, which could be fetched via getProfile)
      * @param string $systolic Systolic measurement
      * @param string $diastolic Diastolic measurement
-     * @param DateTime $time Time of the measurement (set proper timezone, which could be fetched via getProfile)
+     * @param \DateTime $time Time of the measurement (set proper timezone, which could be fetched via getProfile)
      * @return mixed SimpleXMLElement or the value encoded in json as an object
      */
-    public function logBloodPressure(DateTime $date, $systolic, $diastolic, DateTime $time = null)
+    public function logBloodPressure(\DateTime $date, $systolic, $diastolic, \DateTime $time = null)
     {
         $parameters = array();
         $parameters['date'] = $date->format('Y-m-d');
@@ -142,7 +142,7 @@ class BodyGateway extends EndpointGateway {
      * Get user glucose log entries for specific date
      *
      * @throws Exception
-     * @param  DateTime $date
+     * @param  \DateTime $date
      * @param  String $dateStr
      * @return mixed SimpleXMLElement or the value encoded in json as an object
      */
@@ -159,14 +159,14 @@ class BodyGateway extends EndpointGateway {
      * Log user glucose and HbA1c
      *
      * @throws Exception
-     * @param DateTime $date Log entry date (set proper timezone, which could be fetched via getProfile)
+     * @param \DateTime $date Log entry date (set proper timezone, which could be fetched via getProfile)
      * @param string $tracker Name of the glucose tracker
      * @param string $glucose Glucose measurement
      * @param string $hba1c Glucose measurement
-     * @param DateTime $time Time of the measurement (set proper timezone, which could be fetched via getProfile)
+     * @param \DateTime $time Time of the measurement (set proper timezone, which could be fetched via getProfile)
      * @return mixed SimpleXMLElement or the value encoded in json as an object
      */
-    public function logGlucose(DateTime $date, $tracker, $glucose, $hba1c = null, DateTime $time = null)
+    public function logGlucose(\DateTime $date, $tracker, $glucose, $hba1c = null, \DateTime $time = null)
     {
         $parameters = array();
         $parameters['date'] = $date->format('Y-m-d');
@@ -186,7 +186,7 @@ class BodyGateway extends EndpointGateway {
      * Get user heart rate log entries for specific date
      *
      * @throws Exception
-     * @param  DateTime $date
+     * @param  \DateTime $date
      * @param  String $dateStr
      * @return mixed SimpleXMLElement or the value encoded in json as an object
      */
@@ -203,13 +203,13 @@ class BodyGateway extends EndpointGateway {
      * Log user heart rate
      *
      * @throws Exception
-     * @param DateTime $date Log entry date (set proper timezone, which could be fetched via getProfile)
+     * @param \DateTime $date Log entry date (set proper timezone, which could be fetched via getProfile)
      * @param string $tracker Name of the glucose tracker
      * @param string $heartRate Heart rate measurement
-     * @param DateTime $time Time of the measurement (set proper timezone, which could be fetched via getProfile)
+     * @param \DateTime $time Time of the measurement (set proper timezone, which could be fetched via getProfile)
      * @return mixed SimpleXMLElement or the value encoded in json as an object
      */
-    public function logHeartRate(DateTime $date, $tracker, $heartRate, DateTime $time = null)
+    public function logHeartRate(\DateTime $date, $tracker, $heartRate, \DateTime $time = null)
     {
         $parameters = array();
         $parameters['date'] = $date->format('Y-m-d');

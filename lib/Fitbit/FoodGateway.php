@@ -8,7 +8,7 @@ class FoodGateway extends EndpointGateway {
      * Get user foods for specific date
      *
      * @throws Exception
-     * @param  DateTime $date
+     * @param  \DateTime $date
      * @param  String $dateStr
      * @return mixed SimpleXMLElement or the value encoded in json as an object
      */
@@ -59,14 +59,14 @@ class FoodGateway extends EndpointGateway {
      * Log user food
      *
      * @throws Exception
-     * @param DateTime $date Food log date
+     * @param \DateTime $date Food log date
      * @param string $foodId Food Id from foods database (see searchFoods)
      * @param string $mealTypeId Meal Type Id from foods database (see searchFoods)
      * @param string $unitId Unit Id, should be allowed for this food (see getFoodUnits and searchFoods)
      * @param string $amount Amount in specified units
      * @return mixed SimpleXMLElement or the value encoded in json as an object
      */
-    public function logFood(DateTime $date, $foodId, $mealTypeId, $unitId, $amount, $foodName = null, $calories = null, $brandName = null, $nutrition = null)
+    public function logFood(\DateTime $date, $foodId, $mealTypeId, $unitId, $amount, $foodName = null, $calories = null, $brandName = null, $nutrition = null)
     {
         $parameters = array();
         $parameters['date'] = $date->format('Y-m-d');

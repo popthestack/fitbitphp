@@ -8,7 +8,7 @@ class WaterGateway extends EndpointGateway {
      * Get user water log entries for specific date
      *
      * @throws Exception
-     * @param  DateTime $date
+     * @param  \DateTime $date
      * @param  String $dateStr
      * @return mixed SimpleXMLElement or the value encoded in json as an object
      */
@@ -25,12 +25,12 @@ class WaterGateway extends EndpointGateway {
      * Log user water
      *
      * @throws Exception
-     * @param DateTime $date Log entry date (set proper timezone, which could be fetched via getProfile)
+     * @param \DateTime $date Log entry date (set proper timezone, which could be fetched via getProfile)
      * @param string $amount Amount in ml/fl oz (as set with setMetric) or waterUnit
      * @param string $waterUnit Water Unit ("ml", "fl oz" or "cup")
      * @return mixed SimpleXMLElement or the value encoded in json as an object
      */
-    public function logWater(DateTime $date, $amount, $waterUnit = null)
+    public function logWater(\DateTime $date, $amount, $waterUnit = null)
     {
         $waterUnits = array('ml', 'fl oz', 'cup');
 
