@@ -11,12 +11,12 @@
             "source": {
                 "type": "git",
                 "url": "https://github.com/Lusitanian/PHPoAuthLib.git",
-                "reference": "c982a09656a8bacd2e4a1266dabd52ab552ea2af"
+                "reference": "260a8d0660d4efde1f609722889c46359ebaba95"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/Lusitanian/PHPoAuthLib/zipball/c982a09656a8bacd2e4a1266dabd52ab552ea2af",
-                "reference": "c982a09656a8bacd2e4a1266dabd52ab552ea2af",
+                "url": "https://api.github.com/repos/Lusitanian/PHPoAuthLib/zipball/260a8d0660d4efde1f609722889c46359ebaba95",
+                "reference": "260a8d0660d4efde1f609722889c46359ebaba95",
                 "shasum": ""
             },
             "require": {
@@ -54,7 +54,9 @@
                 },
                 {
                     "name": "Pieter Hordijk",
-                    "email": "info@pieterhordijk.com"
+                    "email": "info@pieterhordijk.com",
+                    "homepage": "https://pieterhordijk.com",
+                    "role": "developer"
                 }
             ],
             "description": "PHP 5.3+ oAuth 1/2 Library",
@@ -64,7 +66,7 @@
                 "oauth",
                 "security"
             ],
-            "time": "2013-08-19 16:37:43"
+            "time": "2013-08-29 14:42:33"
         }
     ],
     "packages-dev": [
