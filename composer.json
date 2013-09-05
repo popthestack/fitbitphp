@@ -2,7 +2,7 @@
     "name": "popthestack/fitbit",
     "version": "0.6",
     "type": "library",
-    "description": "Fitbit library with OAuth",
+    "description": "Fitbit library with OAuth. This library is maintained.",
     "keywords": ["fitbit"],
     "homepage": "https://github.com/popthestack/fitbitphp",
     "license" : "Apache-2.0",
