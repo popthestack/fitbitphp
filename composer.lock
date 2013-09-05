@@ -3,20 +3,20 @@
         "This file locks the dependencies of your project to a known state",
         "Read more about it at http://getcomposer.org/doc/01-basic-usage.md#composer-lock-the-lock-file"
     ],
-    "hash": "eee9a5866f553f0eaeaefbb66ad59b7f",
+    "hash": "0ba615eb9af93cf4712b772b51f768d6",
     "packages": [
         {
             "name": "lusitanian/oauth",
-            "version": "dev-master",
+            "version": "v0.2.2",
             "source": {
                 "type": "git",
                 "url": "https://github.com/Lusitanian/PHPoAuthLib.git",
-                "reference": "260a8d0660d4efde1f609722889c46359ebaba95"
+                "reference": "a664fbdaf6c663689c08b6c32ebdf17a037e0624"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/Lusitanian/PHPoAuthLib/zipball/260a8d0660d4efde1f609722889c46359ebaba95",
-                "reference": "260a8d0660d4efde1f609722889c46359ebaba95",
+                "url": "https://api.github.com/repos/Lusitanian/PHPoAuthLib/zipball/a664fbdaf6c663689c08b6c32ebdf17a037e0624",
+                "reference": "a664fbdaf6c663689c08b6c32ebdf17a037e0624",
                 "shasum": ""
             },
             "require": {
@@ -66,7 +66,7 @@
                 "oauth",
                 "security"
             ],
-            "time": "2013-08-29 14:42:33"
+            "time": "2013-09-03 21:15:38"
         }
     ],
     "packages-dev": [
@@ -76,9 +76,9 @@
 
     ],
     "minimum-stability": "stable",
-    "stability-flags": {
-        "lusitanian/oauth": 20
-    },
+    "stability-flags": [
+
+    ],
     "platform": {
         "php": ">=5.3.0"
     },
