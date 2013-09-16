@@ -6,7 +6,7 @@ class AuthenticationGateway extends EndpointGateway {
 
     public function isAuthorized()
     {
-        return $this->service->getStorage()->hasAccessToken();
+        return $this->service->getStorage()->hasAccessToken('FitBit');
     }
 
     /**
