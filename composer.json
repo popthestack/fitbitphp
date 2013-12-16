@@ -8,7 +8,7 @@
     "license" : "Apache-2.0",
     "authors": [
         {
-            "name": "Ryan Martinsen",
+            "name": ["Ryan Martinsen","Juni Samos"],
             "email": "ryan@ryanware.com",
             "homepage": "http://ryanmartinsen.com"
         },
