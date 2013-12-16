@@ -1,5 +1,5 @@
 {
-    "name": "jsamos/fitbit",
+    "name": "popthestack/fitbit",
     "version": "0.6",
     "type": "library",
     "description": "Fitbit library with OAuth. This library is maintained.",
