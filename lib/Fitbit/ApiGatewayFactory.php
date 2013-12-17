@@ -181,6 +181,13 @@ class ApiGatewayFactory
         return $gateway;
     }
 
+    public function getBodyTimeSeriesGateway()
+    {
+        $gateway = new BodyTimeSeriesGateway;
+        $this->injectGatewayDependencies($gateway);
+        return $gateway;
+    }
+
     public function getFoodGateway()
     {
         $gateway = new FoodGateway;
@@ -198,6 +205,13 @@ class ApiGatewayFactory
     public function getSleepGateway()
     {
         $gateway = new SleepGateway;
+        $this->injectGatewayDependencies($gateway);
+        return $gateway;
+    }
+
+    public function getSleepTimeSeriesGateway()
+    {
+        $gateway = new SleepTimeSeriesGateway;
         $this->injectGatewayDependencies($gateway);
         return $gateway;
     }
