@@ -127,5 +127,5 @@ $tracker_minutes_very_active = $activities_time_series_gateway->getMinutesVeryAc
 
 At the time of writing, the following resources do not currently work, or are documented incorrectly by Fitbit's documentation.
 
-*activities/floors
-*activities/elevation
+* activities/floors
+* activities/elevation
