@@ -2,7 +2,7 @@
 
 namespace Fitbit;
 
-class ActivityTimeSeriesGateway extends EndpointGateway {
+class ActivityTimeSeriesGateway extends TimeSeriesEndpointGateway {
 
     /**
      * Dynamically pass methods to the default connection.
