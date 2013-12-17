@@ -167,6 +167,13 @@ class ApiGatewayFactory
         return $gateway;
     }
 
+    public function getActivityTimeSeriesGateway()
+    {
+        $gateway = new ActivityTimeSeriesGateway;
+        $this->injectGatewayDependencies($gateway);
+        return $gateway;
+    }
+
     public function getBodyGateway()
     {
         $gateway = new BodyGateway;
