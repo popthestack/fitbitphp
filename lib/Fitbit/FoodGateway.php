@@ -1,7 +1,6 @@
 <?php
 
 namespace Fitbit;
-use Datetime;
 
 class FoodGateway extends EndpointGateway {
 
