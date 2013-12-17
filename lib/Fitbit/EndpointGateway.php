@@ -100,6 +100,30 @@ class EndpointGateway {
     }
 
     /**
+     * Get user foods for specific date
+     *
+     * @throws Exception
+     * @param  \DateTime|string $baseDate
+     * @param  string $period
+     * @param  \DateTime|string $endDate
+     * @return mixed SimpleXMLElement or the value encoded in json as an object
+     */
+    public function getSeries($path, $baseDate = null, $period = null, $endDate = null)
+    {
+        $baseDate = $baseDate ?: 'today';
+        $end = ($period) ? $period : ($endDate) ?: '1d';
+
+        if ($baseDate instanceof Datetime)
+            $baseDate = $baseDate->format("Y-m-d");
+
+        if ($end instanceof Datetime) 
+            $end = $end->format("Y-m-d");
+
+        $endpoint = sprintf('user/%s/%s/%s/%s', $this->userID, $path, $baseDate, $end);
+        return $this->makeApiRequest($endpoint);
+    }
+
+    /**
      * Get CLIENT+VIEWER and CLIENT rate limiting quota status
      *
      * @access public
