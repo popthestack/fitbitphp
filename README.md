@@ -88,14 +88,14 @@ echo '</pre>';
 
 Time series data can be colected as described [http://wiki.fitbit.com/display/API/API-Get-Time-Series](http://wiki.fitbit.com/display/API/API-Get-Time-Series)
 
-The base class, TimeSeriesGateway uses the magic __call method to map methods calls to resource endpoints. The method name is converted to the last segment of the URI, the rest of the path is handled by the class.
+The base class, TimeSeriesGateway, uses the magic __call method to map methods calls to resource endpoints. The method name is converted to the last segment of the URI, the rest of the path is handled by the class.
 
 ```php
 $sleep_time_series_gateway = $factory->getTimeSeriesGateway();
 $minutes_asleep = $sleep_time_series_gateway->getMinutesAsleep();
 ```
 
-A method call with parameters will default to a time series of today/1d. A period, baseDate and endDate can be passeed to specify the time series. *Note: Period will override endDate.
+A method call without parameters will default to a time series of today/1d. A period, baseDate and endDate can be passed to specify the time series. *Note: period will override endDate.
 
 ```php
 //past seven days
@@ -127,5 +127,5 @@ $tracker_minutes_very_active = $activities_time_series_gateway->getMinutesVeryAc
 
 At the time of writing, the following resources do not currently work, or are documented incorrectly by Fitbit's documentation.
 
-activities/floors
-activities/elevation
+*activities/floors
+*activities/elevation
