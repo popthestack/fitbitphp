@@ -11,6 +11,12 @@ class ActivityTimeSeriesGateway extends TimeSeriesEndpointGateway {
      */
     protected static $format = 'activities/%s/date';
 
+    /**
+     * convert to trcker only fragment
+     * 
+     * @param string $fragment
+     * @return string
+     */
     protected function trackerOnlyFragment($fragment)
     {   
         return str_replace('activities', 'activities/tracker', $fragment);
