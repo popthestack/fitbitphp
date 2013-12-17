@@ -188,6 +188,13 @@ class ApiGatewayFactory
         return $gateway;
     }
 
+    public function getFoodTimeSeriesGateway()
+    {
+        $gateway = new FoodTimeSeriesGateway;
+        $this->injectGatewayDependencies($gateway);
+        return $gateway;
+    }
+
     public function getSleepGateway()
     {
         $gateway = new SleepGateway;

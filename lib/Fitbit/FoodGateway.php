@@ -23,45 +23,6 @@ class FoodGateway extends EndpointGateway {
     }
 
     /**
-     * Get user foods for specific date
-     *
-     * {@inheritdoc}
-     */
-    public function getSeries($path, $baseDate = null, $period = null, $endDate = null)
-    {
-        $path = sprintf('foods/log/%s/date', $path);
-        return parent::getSeries($path, $baseDate, $period, $endDate);
-    }
-
-    /**
-     * Get user calories in for a timespan
-     *
-     * @throws Exception
-     * @param  \DateTime|string $baseDate
-     * @param  string $period
-     * @param  \DateTime|string $endDate
-     * @return mixed SimpleXMLElement or the value encoded in json as an object
-     */
-    public function getCaloriesIn($baseDate = null, $period = null, $endDate = null)
-    { 
-        return $this->getSeries('caloriesIn', $baseDate, $period, $endDate);
-    }
-
-    /**
-     * Get user water in for a timespan
-     *
-     * @throws Exception
-     * @param  \DateTime|string $baseDate
-     * @param  string $period
-     * @param  \DateTime|string $endDate
-     * @return mixed SimpleXMLElement or the value encoded in json as an object
-     */
-    public function getWater($baseDate = null, $period = null, $endDate = null)
-    { 
-        return $this->getSeries('water', $baseDate, $period, $endDate);
-    }
-
-    /**
      * Get user recent foods
      *
      * @throws Exception
