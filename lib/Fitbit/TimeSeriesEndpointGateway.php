@@ -1,6 +1,7 @@
 <?php
 
 namespace Fitbit;
+use DateTime;
 
 class TimeSeriesEndpointGateway extends EndpointGateway {
 
