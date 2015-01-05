@@ -167,9 +167,23 @@ class ApiGatewayFactory
         return $gateway;
     }
 
+    public function getActivityTimeSeriesGateway()
+    {
+        $gateway = new ActivityTimeSeriesGateway;
+        $this->injectGatewayDependencies($gateway);
+        return $gateway;
+    }
+
     public function getBodyGateway()
     {
         $gateway = new BodyGateway;
+        $this->injectGatewayDependencies($gateway);
+        return $gateway;
+    }
+
+    public function getBodyTimeSeriesGateway()
+    {
+        $gateway = new BodyTimeSeriesGateway;
         $this->injectGatewayDependencies($gateway);
         return $gateway;
     }
@@ -181,9 +195,23 @@ class ApiGatewayFactory
         return $gateway;
     }
 
+    public function getFoodTimeSeriesGateway()
+    {
+        $gateway = new FoodTimeSeriesGateway;
+        $this->injectGatewayDependencies($gateway);
+        return $gateway;
+    }
+
     public function getSleepGateway()
     {
         $gateway = new SleepGateway;
+        $this->injectGatewayDependencies($gateway);
+        return $gateway;
+    }
+
+    public function getSleepTimeSeriesGateway()
+    {
+        $gateway = new SleepTimeSeriesGateway;
         $this->injectGatewayDependencies($gateway);
         return $gateway;
     }
